@@ -158,7 +158,7 @@ Now, consider:
 Conversation so far:
 {conversation_summary}
 
-User's latest statement:
+The user's latest statement is the most important for deciding the next stage. Pay special attention to this statement:
 \"\"\"{user_input}\"\"\"
 
 **Instruction**: 
@@ -285,15 +285,8 @@ def determine_next_stage(user_input, current_stage, conversation_summary):
     if recommended_stage:
         # Example logic: always jump to the recommended stage if it's higher than current_stage
         # If you want to allow backward jumps, remove or modify the check below
-        if recommended_stage > current_stage:
-            return recommended_stage
-        else:
-            # If you prefer to allow backward jumps, do:
-            # return recommended_stage
-            return current_stage
-
-    # 3. Fallback: no change
-    return current_stage
+        if recommended_stage:
+            return recommended_stage  # Allow movement to any recommended stage, higher or lower
 
 # ----------------------------------------------------------------
 # Main Reflection Flow
@@ -311,7 +304,12 @@ def run_reflection_session():
     summarized = summarize_text(user_input)
     conversation_summary = summarized  # update global summary
 
-    # Get GPT's first response for Stage 1
+    # Determine the stage based on the first input
+    current_stage = classify_stage(user_input, conversation_summary)
+    if not current_stage:
+        current_stage = 1  # Fallback to Stage 1 if classification fails
+
+    # Get GPT's first response for the determined stage
     assistant_reply = stage_chat(current_stage, conversation_summary, user_input)
     print(f"\n[Reflection Coach | Stage {current_stage}]: {assistant_reply}")
 
@@ -322,16 +320,17 @@ def run_reflection_session():
             print("\n[Reflection Coach] Thank you for reflecting with me. Take care!")
             break
 
+        # Summarize user input to keep track of key points
+        summarized_input = summarize_text(user_input)
+        # Update the conversation summary (append new summarized input)
+        conversation_summary += f" | {summarized_input}"
+
         # Check if we should move to a new stage
         new_stage = determine_next_stage(user_input, current_stage, conversation_summary)
         if new_stage != current_stage:
             print(f"\n[System] Moving from Stage {current_stage} to Stage {new_stage}...\n")
             current_stage = new_stage
 
-        # Summarize user input to keep track of key points
-        summarized_input = summarize_text(user_input)
-        # Update the conversation summary (append new summarized input)
-        conversation_summary += f" | {summarized_input}"
 
         # Get GPT's response for the current stage
         assistant_reply = stage_chat(current_stage, conversation_summary, user_input)
