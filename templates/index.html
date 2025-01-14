@@ -16,7 +16,40 @@
             color: #fff;
             font-size: 16px;
             box-shadow: 0px 2px 5px #000;
-            font-style: italic; /* Make it look like a status */
+            font-style: italic;
+            position: relative; /* Needed for dot placement */
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            background-color: #fff;
+            border-radius: 50%;
+            animation: typing-animation 1.5s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
+        @keyframes typing-animation {
+            0%, 80%, 100% {
+                opacity: 0;
+                transform: scale(0.8);
+            }
+            40% {
+                opacity: 1;
+                transform: scale(1);
+            }
         }
         body {
             background-color: #1e1e1e;
@@ -73,31 +106,68 @@
     </style>
 </head>
 <body>
+<audio id="send-sound" src="{{ url_for('static', filename='send.mp3') }}"></audio>
+<audio id="receive-sound" src="{{ url_for('static', filename='receive.mp3') }}"></audio>    
     <div class="chat-container">
         <div id="chat-box"></div>
         <div class="typing-indicator" id="typing-indicator">AI is typing...</div>
         <input id="input-box" type="text" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
-    </div>
-
+    </div>   
     <script>
         const chatBox = document.getElementById("chat-box");
         const typingIndicator = document.getElementById("typing-indicator");
         const inputBox = document.getElementById("input-box");
 
-        function addMessage(content, sender) {
+        function playSound(audioId) {
+            const sound = document.getElementById(audioId);
+            if (sound) {
+                // Check if playback is allowed
+                if (sound.paused || sound.readyState === 4) {
+                    sound.currentTime = 0; // Reset playback to the start
+                    sound.play().catch((error) => {
+                        console.error("Sound playback failed:", error);
+                    });
+                }
+            }
+        }
+
+        function addMessage(content, sender, isTyping = false) {
             const messageDiv = document.createElement("div");
             messageDiv.className = `message ${sender}`;
-            const bubble = document.createElement("div");
-            bubble.className = "bubble";
-            bubble.textContent = content;
-            messageDiv.appendChild(bubble);
+
+            if (isTyping) {
+                const bubble = document.createElement("div");
+                bubble.className = "typing-bubble";
+                const dots = document.createElement("div");
+                dots.className = "typing-dots";
+                for (let i = 0; i < 3; i++) {
+                    const dot = document.createElement("span");
+                    dots.appendChild(dot);
+                }
+                bubble.appendChild(dots);
+                messageDiv.appendChild(bubble);
+            } else {
+                const bubble = document.createElement("div");
+                bubble.className = "bubble";
+                bubble.textContent = content;
+                messageDiv.appendChild(bubble);
+            }
+
             chatBox.appendChild(messageDiv);
             chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         async function sendMessage(message) {
             addMessage(message, "user");
-            typingIndicator.style.display = "block";
+
+            // Play sound for sending a message
+            playSound("send-sound");
+
+            // Show typing bubble
+            const typingMessage = document.createElement("div");
+            typingMessage.className = "message ai";
+            addMessage("", "ai", true); // Add typing bubble
+
             try {
                 const response = await fetch("/get_response", {
                     method: "POST",
@@ -105,11 +175,20 @@
                     body: JSON.stringify({ message }),
                 });
                 const data = await response.json();
-                typingIndicator.style.display = "none"; // Hide indicator after response
+
+                // Remove typing bubble
+                const typingBubble = document.querySelector(".typing-bubble");
+                if (typingBubble) typingBubble.parentNode.remove();
+
+                // Play sound for receiving a message
+                playSound("receive-sound");
+
+                // Add AI message
                 addMessage(data.message, "ai");
             } catch (error) {
-                typingIndicator.style.display = "none"; // Hide indicator even on error
                 console.error("Error fetching response:", error);
+                const typingBubble = document.querySelector(".typing-bubble");
+                if (typingBubble) typingBubble.parentNode.remove();
             }
         }
 

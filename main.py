@@ -3,7 +3,7 @@ import openai
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder="static")
 
 load_dotenv()  # Loads .env file
 
