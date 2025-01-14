@@ -356,17 +356,36 @@ def run_reflection_session():
 def index():
     return render_template("index.html")  # Frontend UI
 
+# Global state variables
+conversation_summary = "No conversation yet."  # Initialize summary globally
+current_stage = 1  # Default starting stage
+
 @app.route("/get_response", methods=["POST"])
 def get_response():
-    user_input = request.json.get("message", "")
-    conversation_summary = "No conversation yet."  # Initialize the conversation summary
-    current_stage = 1  # Default to Stage 1
+    global conversation_summary, current_stage  # Maintain state between requests
 
-    if user_input == "":  # If no user input, generate the first question
-        response_message = stage_chat(current_stage, conversation_summary, "")
-    else:
-        # Handle user input: You may want to add logic here to summarize or classify
-        response_message = f"Processing: {user_input}"  # Replace with your logic for subsequent messages
+    user_input = request.json.get("message", "")  # Get user input from the frontend
+    response_message = ""
+
+    try:
+        if user_input.strip() == "":  # If the user hasn't entered any input (first question)
+            response_message = "Hey, so what brings you here? :)"
+        else:
+            # Summarize user input and append it to the conversation summary
+            summarized_input = summarize_text(user_input)
+            conversation_summary += f" | {summarized_input}"  # Update global conversation state
+
+            # Determine if we need to move to the next stage
+            new_stage = determine_next_stage(user_input, current_stage, conversation_summary)
+            if new_stage != current_stage:
+                current_stage = new_stage  # Update the stage globally
+
+            # Generate GPT response for the current stage
+            response_message = stage_chat(current_stage, conversation_summary, user_input)
+
+    except Exception as e:
+        print(f"Error in /get_response: {e}")
+        response_message = "I'm sorry, something went wrong."
 
     return jsonify({"message": response_message})
 
