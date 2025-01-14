@@ -246,7 +246,7 @@ def stage_chat(stage_id, conversation_summary, user_input):
             f"1. ONLY ask a single open-ended, stage-appropriate question.\n"
             f"2. Do NOT include affirmations, guidance, or advice unless Stage 10.\n"
             f"3. Your tone must align with the stage-specific context and goal.\n"
-            f"4. Avoid generic or repetitive phrasing; your question must be thoughtful and relevant.\n\n"
+            f"4. Avoid generic or repetitive phrasing; your question must be thoughtful and relevant and very POIGNANT rather than vague. It must ADD something to what the user has said whilst also repeating their words if appropriate. It could spark curiousity if appropriate, or force themselves to confront a hard painful truth, if the stage is appropriate for that.\n\n"
             f"Conversation Summary so far: {conversation_summary}\n\n"
             f"User's Latest Statement: \"{user_input}\"\n\n"
             f"Now, ask a single, stage-appropriate question."
