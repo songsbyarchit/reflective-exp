@@ -103,6 +103,41 @@
             border-radius: 10px;
             margin-top: 10px;
         }
+        @keyframes bounce-in-right {
+            0% {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            50% {
+                transform: translateX(-10%);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes bounce-in-left {
+            0% {
+                transform: translateX(-100%);
+                opacity: 0;
+            }
+            50% {
+                transform: translateX(10%);
+                opacity: 1;
+            }
+            100% {
+                transform: translateX(0);
+            }
+        }
+
+        .user .bubble {
+            animation: bounce-in-right 0.3s ease-out;
+        }
+
+        .ai .bubble {
+            animation: bounce-in-left 0.3s ease-out;
+        }
     </style>
 </head>
 <body>
@@ -164,16 +199,25 @@
             playSound("send-sound");
 
             // Show typing bubble
-            const typingMessage = document.createElement("div");
-            typingMessage.className = "message ai";
             addMessage("", "ai", true); // Add typing bubble
 
             try {
+                // Calculate dynamic delay based on message length
+                const messageLength = message.length;
+                let delay = 0; // Default to 1 second
+                if (messageLength > 20 && messageLength <= 50) delay = 1100; // 2 seconds
+                else if (messageLength > 50 && messageLength <= 100) delay = 2200; // 3 seconds
+                else if (messageLength > 100) delay = 3300; // 4 seconds
+
+                // Simulate typing delay
+                await new Promise((resolve) => setTimeout(resolve, delay));
+
                 const response = await fetch("/get_response", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ message }),
                 });
+
                 const data = await response.json();
 
                 // Remove typing bubble
