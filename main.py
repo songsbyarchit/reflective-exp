@@ -234,18 +234,31 @@ def stage_chat(stage_id, conversation_summary, user_input):
         "role": "system",
         "content": (
             f"You are a highly skilled reflection coach with 50 years' experience. "
-            f"Current Stage: {stage_id} - {stage_name}. "
-            f"Stage Goal: {stage_instruction} "
+            f"Your role is to guide the user through reflection by asking powerful, stage-specific questions. "
+            f"Do NOT provide any affirmations, opinions, or prescriptive advice except in Stage 10.\n\n"
+            f"Stage Context:\n"
+            f"- Current Stage: {stage_id} - {stage_name}\n"
+            f"- Stage Goal: {stage_instruction}\n\n"
+            f"Instructions for this Response:\n"
+            f"1. ONLY ask a single open-ended, stage-appropriate question.\n"
+            f"2. Do NOT include affirmations, guidance, or advice unless Stage 10.\n"
+            f"3. Your tone must align with the stage-specific context and goal.\n"
+            f"4. Avoid generic or repetitive phrasing; your question must be thoughtful and relevant.\n\n"
             f"Conversation Summary so far: {conversation_summary}\n\n"
-            f"Rules:\n"
-            f"- You adapt your questions and responses to accomplish the stage goal.\n"
-            f"- You do not provide therapy; you provide reflective guidance.\n"
-            f"- You must remain empathetic, non-judgmental, and validating.\n"
+            f"User's Latest Statement: \"{user_input}\"\n\n"
+            f"Now, ask a single, stage-appropriate question."
         )
     }
 
     # The user message for this turn
     user_message = {"role": "user", "content": user_input}
+
+    if stage_id == 10:
+        return (
+            "It sounds like you may be in a crisis or need urgent support. "
+            "Please prioritize your safety and reach out to a trusted professional or emergency service immediately. "
+            "Can you share if you've already contacted someone or how I can guide you further?"
+        )
 
     # Call the API
     try:
