@@ -6,82 +6,339 @@ load_dotenv()  # Loads .env file
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# ---------------------------------------------------------
-# Helper Function to Call the ChatGPT 3.5 API
-# ---------------------------------------------------------
-def chat_with_gpt(messages):
+# ----------------------------------------------------------------
+# A dictionary to store instructions/intent for each psychological stage
+# ----------------------------------------------------------------
+STAGES = {
+    1: {
+        "name": "Establish Psychological Safety & Trust",
+        "instruction": (
+            "Your priority is to make the user feel safe and at ease. "
+            "Reassure them they have full control, clarify the purpose of reflection, "
+            "and start with gentle, open-ended questions. Keep your tone calm and empathetic."
+        )
+    },
+    2: {
+        "name": "Clarify the User’s Desired Outcome",
+        "instruction": (
+            "Help the user clarify their goals or the main issue they wish to address. "
+            "Ask questions to uncover why this matters to them. Keep them focused on identifying "
+            "the outcome they most desire."
+        )
+    },
+    3: {
+        "name": "Explore Current Reality & Emotional Landscape",
+        "instruction": (
+            "Invite the user to expand on their current situation and emotions. "
+            "Encourage them to label their feelings. Ask open-ended questions that allow "
+            "for deeper exploration of challenges, thoughts, and recurring patterns."
+        )
+    },
+    4: {
+        "name": "Identify and Challenge Limiting Beliefs",
+        "instruction": (
+            "Listen for statements indicating limiting beliefs (like 'I can't,' 'I always,' 'I never'). "
+            "Gently question these assumptions using Socratic questioning. Encourage perspective shifts."
+        )
+    },
+    5: {
+        "name": "Guide Toward Possible Solutions or Next Steps",
+        "instruction": (
+            "Help the user brainstorm and evaluate potential solutions or action steps. "
+            "Focus on realistic, actionable ideas that align with their goals and resources."
+        )
+    },
+    6: {
+        "name": "Encourage Self-Monitoring & Reflection Loop",
+        "instruction": (
+            "Prompt the user to think about how they can keep track of progress. "
+            "Suggest ways to self-reflect and adjust their plan over time."
+        )
+    },
+    7: {
+        "name": "Personalization & Context Awareness",
+        "instruction": (
+            "Reference the user's unique history, values, and previous reflections. "
+            "Help them feel this process is tailored to them."
+        )
+    },
+    8: {
+        "name": "Sequencing & Nuance of Question Delivery",
+        "instruction": (
+            "Ensure questions are not overwhelming. Use progressive depth: start broad, "
+            "gradually get more specific. Use language that is clear, empathetic, and non-judgmental."
+        )
+    },
+    9: {
+        "name": "Empathic Tone & Validation (Without Becoming Therapy)",
+        "instruction": (
+            "Validate the user’s feelings and experiences without providing clinical therapy. "
+            "Offer empathy and understanding; avoid diagnostic language."
+        )
+    },
+    10: {
+        "name": "Ethical Boundaries & Referral Points",
+        "instruction": (
+            "If the user expresses severe distress, direct them to professional help. "
+            "Remind them this reflection is not therapy. Provide resource links if needed."
+        )
+    },
+}
+
+def classify_stage(user_input, conversation_summary):
     """
-    Sends a list of messages (dicts) to the OpenAI ChatCompletion endpoint.
-    Returns the response text from the assistant.
+    Calls GPT to decide which stage (1-10) best fits the user's current reflection needs
+    based on:
+      - The user's last input
+      - The conversation summary so far
     
-    :param messages: A list of messages in the format:
-                     [{"role": "system"|"user"|"assistant", "content": "..."}]
-    :return: The content of the assistant's response.
+    The function returns an integer from 1 to 10 if successful,
+    or None if it can't parse a valid answer.
     """
+
+    # A more detailed classification prompt, giving GPT robust context:
+    classification_prompt = f"""
+We have 10 psychological stages of reflection with these detailed definitions:
+
+1. Establish Psychological Safety & Trust
+   - The user might be anxious, uncertain, or reluctant to share. 
+   - Aim is to reduce threat response and build a sense of safety.
+
+2. Clarify the User’s Desired Outcome
+   - The user is uncertain about what they want or their main focus.
+   - Aim is to uncover goals or clarify reasons for reflection.
+
+3. Explore Current Reality & Emotional Landscape
+   - The user is sharing experiences, emotions, challenges.
+   - Aim is open-ended exploration, understanding context, labeling emotions.
+
+4. Identify and Challenge Limiting Beliefs
+   - The user expresses negative self-talk or absolute statements (e.g., "I can't," "I never," "I always").
+   - Aim is to recognize and gently question these beliefs.
+
+5. Guide Toward Possible Solutions or Next Steps
+   - The user is ready to brainstorm or look for practical ideas.
+   - Aim is to explore action steps, practical strategies.
+
+6. Encourage Self-Monitoring & Reflection Loop
+   - The user has potential actions or insights and wants to track progress.
+   - Aim is to set up personal check-ins, accountability, or feedback loops.
+
+7. Personalization & Context Awareness
+   - The user needs deeply tailored questions referencing their values, history, or environment.
+   - Aim is to make the reflection very relevant and personalized.
+
+8. Sequencing & Nuance of Question Delivery
+   - The user might be overwhelmed or need a carefully paced approach.
+   - Aim is to ensure step-by-step progression, not bombarding them with complexity.
+
+9. Empathic Tone & Validation (Without Becoming Therapy)
+   - The user needs emotional validation but not clinical diagnosis.
+   - Aim is to acknowledge feelings, show understanding, remain non-therapeutic.
+
+10. Ethical Boundaries & Referral Points
+    - The user indicates severe distress, potential crisis, or content that may require professional help.
+    - Aim is to provide disclaimers, referral info, or direct them to professional resources.
+
+Here are some examples of user statements and the stage they might most likely need:
+
+- "I feel really scared opening up about this." → Stage 1 (Psychological Safety)
+- "I’m not sure what I actually want in life." → Stage 2 (Clarify Outcome)
+- "I feel anxious every time I think about my job." → Stage 3 (Explore Emotional Landscape)
+- "I always fail at everything I do." → Stage 4 (Limiting Beliefs)
+- "I want to find a solution to get past this problem." → Stage 5 (Possible Solutions)
+- "How do I keep track of my progress over the next month?" → Stage 6 (Self-Monitoring)
+- "My personal experiences with X factor really shape how I think about this." → Stage 7 (Personalization)
+- "I might need a more step-by-step approach; this is too overwhelming." → Stage 8 (Sequencing & Nuance)
+- "I’m feeling sad, and I just need some empathy." → Stage 9 (Empathic Tone & Validation)
+- "I feel I’m in crisis; I’m really scared I might hurt myself." → Stage 10 (Ethical Boundaries & Referral)
+
+Now, consider:
+
+Conversation so far:
+{conversation_summary}
+
+User's latest statement:
+\"\"\"{user_input}\"\"\"
+
+**Instruction**: 
+1) Decide which ONE stage (1-10) most closely matches the user's immediate reflective need.
+2) Do not provide an explanation or reasoning in the final output. 
+3) Only output a single number (1, 2, 3, ..., or 10).
+
+If you are unsure, choose the stage that seems the closest match.
+    """
+
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "You are a reflection stage classifier. Reason internally but output only the stage number."},
+                {"role": "user", "content": classification_prompt}
+            ],
+            temperature=0.0,  # More deterministic
+            max_tokens=10,
+        )
+        # Extract raw text
+        stage_text = response.choices[0].message["content"].strip()
+        # Attempt to parse an integer from the response
+        possible_stage = int("".join(filter(str.isdigit, stage_text)))
+        if 1 <= possible_stage <= 10:
+            return possible_stage
+
+    except Exception as e:
+        print(f"Error in classify_stage: {e}")
+
+    return None  # fallback if unable to parse
+
+# ----------------------------------------------------------------
+# Helper function: Summarize the user's last input
+# ----------------------------------------------------------------
+def summarize_text(text):
+    """
+    Summarizes the user's latest input to keep conversation memory concise.
+    You can refine or replace this approach with your own summarization logic.
+    """
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant that summarizes text succinctly."},
+        {"role": "user", "content": f"Please summarize the following text in 1-2 sentences:\n\n{text}"}
+    ]
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=messages,
-            temperature=0.7,      # Adjust for more/less creative responses
-            max_tokens=300,       # Adjust for desired response length
+            temperature=0.2,
+            max_tokens=60,
+        )
+        return response.choices[0].message["content"].strip()
+    except Exception as e:
+        print(f"Error calling OpenAI for summarization: {e}")
+        return text  # fallback: just return original text if error
+
+# ----------------------------------------------------------------
+# Helper function: Chat with GPT in the context of a specific stage
+# ----------------------------------------------------------------
+def stage_chat(stage_id, conversation_summary, user_input):
+    """
+    Build a dynamic system prompt that:
+      1) Declares which stage we are in and why
+      2) Provides stage-specific instructions
+      3) Shares a short summary of conversation so far
+      4) Includes the new user input
+    """
+    stage_name = STAGES[stage_id]["name"]
+    stage_instruction = STAGES[stage_id]["instruction"]
+
+    # Build system message with stage context
+    system_message = {
+        "role": "system",
+        "content": (
+            f"You are a highly skilled reflection coach with 50 years' experience. "
+            f"Current Stage: {stage_id} - {stage_name}. "
+            f"Stage Goal: {stage_instruction} "
+            f"Conversation Summary so far: {conversation_summary}\n\n"
+            f"Rules:\n"
+            f"- You adapt your questions and responses to accomplish the stage goal.\n"
+            f"- You do not provide therapy; you provide reflective guidance.\n"
+            f"- You must remain empathetic, non-judgmental, and validating.\n"
+        )
+    }
+
+    # The user message for this turn
+    user_message = {"role": "user", "content": user_input}
+
+    # Call the API
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[system_message, user_message],
+            temperature=0.7,
+            max_tokens=300,
         )
         return response.choices[0].message["content"]
     except Exception as e:
         print(f"Error calling OpenAI API: {e}")
         return "I'm sorry, I encountered an error."
 
-# ---------------------------------------------------------
-# Basic Reflection Flow
-# ---------------------------------------------------------
+# ----------------------------------------------------------------
+# Simple function to decide whether to move to the next stage
+# (You can implement more advanced NLP-based logic here)
+# ----------------------------------------------------------------
+def determine_next_stage(user_input, current_stage, conversation_summary):
+    """
+    1. If user explicitly says "move on" or "next stage," jump to next stage (unless at 10).
+    2. Otherwise, call classify_stage() to see what stage GPT recommends.
+    3. If classify_stage() returns a valid stage, jump to it (or stay put if that logic suits you).
+    4. Fallback: remain in current_stage.
+    """
+    lower_input = user_input.lower()
+
+    # 1. Check if user explicitly requests to move on to next stage
+    if "move on" in lower_input or "next stage" in lower_input:
+        if current_stage < 10:
+            return current_stage + 1
+        else:
+            return current_stage  # already at 10
+
+    # 2. Otherwise, use GPT classification to see what stage is most relevant
+    recommended_stage = classify_stage(user_input, conversation_summary)
+    if recommended_stage:
+        # Example logic: always jump to the recommended stage if it's higher than current_stage
+        # If you want to allow backward jumps, remove or modify the check below
+        if recommended_stage > current_stage:
+            return recommended_stage
+        else:
+            # If you prefer to allow backward jumps, do:
+            # return recommended_stage
+            return current_stage
+
+    # 3. Fallback: no change
+    return current_stage
+
+# ----------------------------------------------------------------
+# Main Reflection Flow
+# ----------------------------------------------------------------
 def run_reflection_session():
-    """
-    A simple interactive loop that demonstrates a basic reflection session.
-    You can expand this to include multiple 'stages' or to detect
-    user needs in real time (writing vs. voice, short vs. long, etc.).
-    """
+    print("=== Reflection App (V1 - Multi-Stage) ===")
 
-    # 1. System instructions (context) for ChatGPT to serve as reflection guide
-    system_context = {
-        "role": "system",
-        "content": (
-            "You are a highly skilled reflection coach with 50 years of experience. "
-            "You adapt your style based on user input. You gently guide the user to reflect, "
-            "but you're not a therapist. You create psychological safety, ask powerful questions, "
-            "and help them gain insights and action steps if needed."
-        )
-    }
+    current_stage = 1  # Start at stage 1 (Psychological Safety)
+    conversation_summary = "No conversation yet."
 
-    # 2. Start the conversation with a check-in stage
-    messages = [system_context]
-    user_input = input("Welcome! How are you feeling today? (Type your response) \n> ")
-    messages.append({"role": "user", "content": user_input})
+    # Initial user check-in
+    user_input = input("\n[You] Welcome! How are you feeling today? (Type your response) \n> ")
 
-    # First assistant response
-    reflection_response = chat_with_gpt(messages)
-    print(f"\n[Reflection Coach]: {reflection_response}")
+    # Summarize the user's initial response
+    summarized = summarize_text(user_input)
+    conversation_summary = summarized  # update global summary
 
-    # 3. Simple loop to continue the session
+    # Get GPT's first response for Stage 1
+    assistant_reply = stage_chat(current_stage, conversation_summary, user_input)
+    print(f"\n[Reflection Coach | Stage {current_stage}]: {assistant_reply}")
+
     while True:
-        user_input = input("\n(Type your reply or 'exit' to end) \n> ")
+        user_input = input("\n[You] (Type your reply or 'exit' to end) \n> ")
 
         if user_input.lower() in ["exit", "quit"]:
-            print("Thank you for reflecting. Take care!")
+            print("\n[Reflection Coach] Thank you for reflecting with me. Take care!")
             break
 
-        # Append user message
-        messages.append({"role": "user", "content": user_input})
-        
-        # Get assistant response
-        reflection_response = chat_with_gpt(messages)
-        print(f"\n[Reflection Coach]: {reflection_response}")
-        
-        # For a real V1, you could insert logic here:
-        # - If user says "I only have 2 minutes," switch to a "timed writing" style prompt.
-        # - If user expresses confusion, pivot to a "clarify your goals" stage, etc.
+        # Check if we should move to a new stage
+        new_stage = determine_next_stage(user_input, current_stage, conversation_summary)
+        if new_stage != current_stage:
+            print(f"\n[System] Moving from Stage {current_stage} to Stage {new_stage}...\n")
+            current_stage = new_stage
 
-# ---------------------------------------------------------
-# Main entry point
-# ---------------------------------------------------------
+        # Summarize user input to keep track of key points
+        summarized_input = summarize_text(user_input)
+        # Update the conversation summary (append new summarized input)
+        conversation_summary += f" | {summarized_input}"
+
+        # Get GPT's response for the current stage
+        assistant_reply = stage_chat(current_stage, conversation_summary, user_input)
+        print(f"\n[Reflection Coach | Stage {current_stage}]: {assistant_reply}")
+
+# ----------------------------------------------------------------
+# Entry Point
+# ----------------------------------------------------------------
 if __name__ == "__main__":
-    print("=== Reflection App (V1) ===")
     run_reflection_session()
