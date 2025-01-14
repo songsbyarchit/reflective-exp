@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reflection Tool</title>
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #fff;
+            font-family: 'Inter', sans-serif; /* Popular for web apps */
+            font-size: 18px; /* Bigger text */
+        }
+        .chat-container {
+            max-width: 800px; /* Wider container */
+            margin: 50px auto;
+            padding: 20px;
+            border-radius: 10px;
+            background-color: #333;
+            box-shadow: 0px 0px 10px #000;
+        }
+        .message {
+            margin: 10px 0;
+            display: flex;
+        }
+        .user {
+            justify-content: flex-end;
+        }
+                .user .bubble {
+            background-color: #d3d3d3; /* Much lighter gray */
+            color: #000; /* Black text */
+        }
+        .ai {
+            justify-content: flex-start;
+        }
+        .ai .bubble {
+            background-color: #0078d4;
+            color: #fff;
+        }
+        .bubble {
+            max-width: 70%;
+            padding: 10px;
+            border-radius: 15px;
+            box-shadow: 0px 2px 5px #000;
+            font-size: 16px; /* Bubble text size */
+        }
+        .typing-indicator {
+            display: none;
+            color: #aaa;
+            font-style: italic;
+        }
+        #input-box {
+            width: calc(100% - 20px);
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div id="chat-box"></div>
+        <div class="typing-indicator" id="typing-indicator">AI is typing...</div>
+        <input id="input-box" type="text" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+    </div>
+
+    <script>
+        const chatBox = document.getElementById("chat-box");
+        const typingIndicator = document.getElementById("typing-indicator");
+        const inputBox = document.getElementById("input-box");
+
+        function addMessage(content, sender) {
+            const messageDiv = document.createElement("div");
+            messageDiv.className = `message ${sender}`;
+            const bubble = document.createElement("div");
+            bubble.className = "bubble";
+            bubble.textContent = content;
+            messageDiv.appendChild(bubble);
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        async function sendMessage(message) {
+            addMessage(message, "user");
+            typingIndicator.style.display = "block";
+            const response = await fetch("/get_response", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message }),
+            });
+            typingIndicator.style.display = "none";
+            const data = await response.json();
+            addMessage(data.message, "ai");
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                const message = inputBox.value.trim();
+                if (message) {
+                    inputBox.value = "";
+                    sendMessage(message);
+                }
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+        // Simulate the first AI message on page load
+        const chatBox = document.getElementById("chat-box");
+        const typingIndicator = document.getElementById("typing-indicator");
+
+        // Add typing animation
+        typingIndicator.style.display = "block";
+
+        // Fetch initial AI response
+        fetch("/get_response", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: "" }) // Empty message to trigger the first question
+        })
+        .then((response) => response.json())
+        .then((data) => {
+            typingIndicator.style.display = "none";
+            addMessage(data.message, "ai"); // Add AI message to chat
+        })
+        .catch((error) => {
+            typingIndicator.style.display = "none";
+            console.error("Error fetching AI response:", error);
+        });
+    });
+    </script>
+</body>
+</html>

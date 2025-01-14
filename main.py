@@ -1,6 +1,9 @@
 import os
 import openai
 from dotenv import load_dotenv
+from flask import Flask, render_template, request, jsonify
+
+app = Flask(__name__)
 
 load_dotenv()  # Loads .env file
 
@@ -349,8 +352,26 @@ def run_reflection_session():
         assistant_reply = stage_chat(current_stage, conversation_summary, user_input)
         print(f"\n[Reflection Coach | Stage {current_stage}]: {assistant_reply}")
 
+@app.route("/")
+def index():
+    return render_template("index.html")  # Frontend UI
+
+@app.route("/get_response", methods=["POST"])
+def get_response():
+    user_input = request.json.get("message", "")
+    conversation_summary = "No conversation yet."  # Initialize the conversation summary
+    current_stage = 1  # Default to Stage 1
+
+    if user_input == "":  # If no user input, generate the first question
+        response_message = stage_chat(current_stage, conversation_summary, "")
+    else:
+        # Handle user input: You may want to add logic here to summarize or classify
+        response_message = f"Processing: {user_input}"  # Replace with your logic for subsequent messages
+
+    return jsonify({"message": response_message})
+
 # ----------------------------------------------------------------
 # Entry Point
 # ----------------------------------------------------------------
 if __name__ == "__main__":
-    run_reflection_session()
+    app.run(debug=True)
