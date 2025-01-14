@@ -2,6 +2,9 @@ import os
 import openai
 from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify
+import random
+from questions import STAGE_QUESTIONS, HYPOTHETICAL_QUESTIONS
+
 
 app = Flask(__name__, static_folder="static")
 
@@ -59,27 +62,6 @@ STAGES = {
         )
     },
     7: {
-        "name": "Personalization & Context Awareness",
-        "instruction": (
-            "Reference the user's unique history, values, and previous reflections. "
-            "Help them feel this process is tailored to them."
-        )
-    },
-    8: {
-        "name": "Sequencing & Nuance of Question Delivery",
-        "instruction": (
-            "Ensure questions are not overwhelming. Use progressive depth: start broad, "
-            "gradually get more specific. Use language that is clear, empathetic, and non-judgmental."
-        )
-    },
-    9: {
-        "name": "Empathic Tone & Validation (Without Becoming Therapy)",
-        "instruction": (
-            "Validate the user’s feelings and experiences without providing clinical therapy. "
-            "Offer empathy and understanding; avoid diagnostic language."
-        )
-    },
-    10: {
         "name": "Ethical Boundaries & Referral Points",
         "instruction": (
             "If the user expresses severe distress, direct them to professional help. "
@@ -90,12 +72,12 @@ STAGES = {
 
 def classify_stage(user_input, conversation_summary):
     """
-    Calls GPT to decide which stage (1-10) best fits the user's current reflection needs
+    Calls GPT to decide which stage (1-7) best fits the user's current reflection needs
     based on:
       - The user's last input
       - The conversation summary so far
     
-    The function returns an integer from 1 to 10 if successful,
+    The function returns an integer from 1 to 7 if successful,
     or None if it can't parse a valid answer.
     """
 
@@ -127,19 +109,7 @@ We have 10 psychological stages of reflection with these detailed definitions:
    - The user has potential actions or insights and wants to track progress.
    - Aim is to set up personal check-ins, accountability, or feedback loops.
 
-7. Personalization & Context Awareness
-   - The user needs deeply tailored questions referencing their values, history, or environment.
-   - Aim is to make the reflection very relevant and personalized.
-
-8. Sequencing & Nuance of Question Delivery
-   - The user might be overwhelmed or need a carefully paced approach.
-   - Aim is to ensure step-by-step progression, not bombarding them with complexity.
-
-9. Empathic Tone & Validation (Without Becoming Therapy)
-   - The user needs emotional validation but not clinical diagnosis.
-   - Aim is to acknowledge feelings, show understanding, remain non-therapeutic.
-
-10. Ethical Boundaries & Referral Points
+7. Ethical Boundaries & Referral Points
     - The user indicates severe distress, potential crisis, or content that may require professional help.
     - Aim is to provide disclaimers, referral info, or direct them to professional resources.
 
@@ -151,10 +121,7 @@ Here are some examples of user statements and the stage they might most likely n
 - "I always fail at everything I do." → Stage 4 (Limiting Beliefs)
 - "I want to find a solution to get past this problem." → Stage 5 (Possible Solutions)
 - "How do I keep track of my progress over the next month?" → Stage 6 (Self-Monitoring)
-- "My personal experiences with X factor really shape how I think about this." → Stage 7 (Personalization)
-- "I might need a more step-by-step approach; this is too overwhelming." → Stage 8 (Sequencing & Nuance)
-- "I’m feeling sad, and I just need some empathy." → Stage 9 (Empathic Tone & Validation)
-- "I feel I’m in crisis; I’m really scared I might hurt myself." → Stage 10 (Ethical Boundaries & Referral)
+- "I feel I’m in crisis; I’m really scared I might hurt myself." → Stage 7 (Ethical Boundaries & Referral)
 
 Now, consider:
 
@@ -165,9 +132,9 @@ The user's latest statement is the most important for deciding the next stage. P
 \"\"\"{user_input}\"\"\"
 
 **Instruction**: 
-1) Decide which ONE stage (1-10) most closely matches the user's immediate reflective need.
+1) Decide which ONE stage (1-7) most closely matches the user's immediate reflective need.
 2) Do not provide an explanation or reasoning in the final output. 
-3) Only output a single number (1, 2, 3, ..., or 10).
+3) Only output a single number (1, 2, 3, 4, 5, 6 or 7).
 
 If you are unsure, choose the stage that seems the closest match.
     """
@@ -186,7 +153,7 @@ If you are unsure, choose the stage that seems the closest match.
         stage_text = response.choices[0].message["content"].strip()
         # Attempt to parse an integer from the response
         possible_stage = int("".join(filter(str.isdigit, stage_text)))
-        if 1 <= possible_stage <= 10:
+        if 1 <= possible_stage <= 7:
             return possible_stage
 
     except Exception as e:
@@ -221,57 +188,73 @@ def summarize_text(text):
 # ----------------------------------------------------------------
 # Helper function: Chat with GPT in the context of a specific stage
 # ----------------------------------------------------------------
+import random
+from questions import STAGE_QUESTIONS, HYPOTHETICAL_QUESTIONS
+
 def stage_chat(stage_id, conversation_summary, user_input):
     """
-    Build a dynamic system prompt that:
-      1) Declares which stage we are in and why
-      2) Provides stage-specific instructions
-      3) Shares a short summary of conversation so far
-      4) Includes the new user input
+    Selects a stage-specific or hypothetical question based on a 50/50 chance.
     """
     stage_name = STAGES[stage_id]["name"]
     stage_instruction = STAGES[stage_id]["instruction"]
 
-    # Build system message with stage context
-    system_message = {
-        "role": "system",
-        "content": (
-            f"You are a highly skilled reflection coach with 50 years' experience. "
-            f"Your role is to guide the user through reflection by asking powerful, stage-specific questions. "
-            f"Do NOT provide any affirmations, opinions, or prescriptive advice except in Stage 10.\n\n"
-            f"Stage Context:\n"
-            f"- Current Stage: {stage_id} - {stage_name}\n"
-            f"- Stage Goal: {stage_instruction}\n\n"
-            f"Instructions for this Response:\n"
-            f"1. ONLY ask a single open-ended, stage-appropriate question.\n"
-            f"2. Do NOT include affirmations, guidance, or advice unless Stage 10.\n"
-            f"3. Your tone must align with the stage-specific context and goal.\n"
-            f"4. Avoid generic or repetitive phrasing; your question must be thoughtful and relevant and very POIGNANT rather than vague. It must ADD something to what the user has said whilst also repeating their words if appropriate. It could spark curiousity if appropriate, or force themselves to confront a hard painful truth, if the stage is appropriate for that.\n\n"
-            f"Conversation Summary so far: {conversation_summary}\n\n"
-            f"User's Latest Statement: \"{user_input}\"\n\n"
-            f"Now, ask a single, stage-appropriate question."
-        )
-    }
+    # Determine if we ask a stage-specific or hypothetical question (50/50 chance)
+    if stage_id != 7:  # Exclude Stage 7 from hypothetical logic
+        is_hypothetical = random.choice([True, False])
+    else:
+        is_hypothetical = False  # Always ask Stage 7's predefined guidance question
 
-    # The user message for this turn
-    user_message = {"role": "user", "content": user_input}
+    if is_hypothetical:
+        # Hypothetical question prompt formatting with an example
+        system_message = {
+            "role": "system",
+            "content": (
+                f"You are a highly skilled reflection coach with 50 years' experience. "
+                f"Your role is to ask powerful, thought-provoking hypothetical questions "
+                f"that are tailored to the issue the user is discussing.\n\n"
+                f"Example of formatting a hypothetical question:\n"
+                f"- User input: 'I feel stuck and don’t know how to move forward.'\n"
+                f"'If you could imagine yourself taking a single step forward, "
+                f"even if you weren’t sure where it leads, what would that step look like?'\n\n"
+                f"Tailor the following hypothetical question based on the user's input: {user_input}"
+            )
+        }
+    else:
+        # Stage-specific question prompt formatting with an example
+        system_message = {
+            "role": "system",
+            "content": (
+                f"You are a highly skilled reflection coach with 50 years' experience. "
+                f"Your role is to ask stage-specific questions that align with the current stage's goal "
+                f"while tailoring the question to the user’s specific issue.\n\n"
+                f"Stage Context:\n"
+                f"- Current Stage: {stage_id} - {STAGES[stage_id]['name']}\n"
+                f"- Stage Goal: {STAGES[stage_id]['instruction']}\n\n"
+                f"Example of formatting a stage-specific question:\n"
+                f"- User input: 'I always feel like I’m failing.'\n"
+                f"- Stage: Identify and Challenge Limiting Beliefs (Stage 4)\n"
+                f"'When you think about times you’ve succeeded, how does that change your perspective on failure?'\n\n"
+                f"Now, ask a stage-specific question based on the user's input: {user_input}"
+            )
+        }
 
-    if stage_id == 10:
-        return (
-            "It sounds like you may be in a crisis or need urgent support. "
-            "Please prioritize your safety and reach out to a trusted professional or emergency service immediately. "
-            "Can you share if you've already contacted someone or how I can guide you further?"
-        )
-
-    # Call the API
+    # API logic for generating the response
     try:
+        if stage_id == 7:
+            return (
+                "It sounds like you may be in a crisis or need urgent support. "
+                "Please prioritize your safety and reach out to a trusted professional or emergency service immediately. "
+                "Can you share if you've already contacted someone or how I can guide you further?"
+            )
+
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[system_message, user_message],
+            messages=[system_message],
             temperature=0.7,
             max_tokens=300,
         )
         return response.choices[0].message["content"]
+
     except Exception as e:
         print(f"Error calling OpenAI API: {e}")
         return "I'm sorry, I encountered an error."
@@ -282,7 +265,7 @@ def stage_chat(stage_id, conversation_summary, user_input):
 # ----------------------------------------------------------------
 def determine_next_stage(user_input, current_stage, conversation_summary):
     """
-    1. If user explicitly says "move on" or "next stage," jump to next stage (unless at 10).
+    1. If user explicitly says "move on" or "next stage," jump to next stage (unless at 7).
     2. Otherwise, call classify_stage() to see what stage GPT recommends.
     3. If classify_stage() returns a valid stage, jump to it (or stay put if that logic suits you).
     4. Fallback: remain in current_stage.
@@ -291,10 +274,10 @@ def determine_next_stage(user_input, current_stage, conversation_summary):
 
     # 1. Check if user explicitly requests to move on to next stage
     if "move on" in lower_input or "next stage" in lower_input:
-        if current_stage < 10:
+        if current_stage < 7:
             return current_stage + 1
         else:
-            return current_stage  # already at 10
+            return current_stage  # already at 7
 
     # 2. Otherwise, use GPT classification to see what stage is most relevant
     recommended_stage = classify_stage(user_input, conversation_summary)
