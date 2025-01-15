@@ -245,6 +245,79 @@ def stage_chat(stage_id, conversation_summary, user_input):
         return "I'm sorry, I encountered an error."
 
 # ----------------------------------------------------------------
+# Function which simply tells the user a multiple choice question to give a rest from typing so they can just click an option
+# ----------------------------------------------------------------
+@app.route("/generate_think_smaller", methods=["POST"])
+def generate_think_smaller():
+    global conversation_summary, last_user_input
+
+    try:
+        # Get the updated conversation summary and last user input from the frontend
+        data = request.get_json()
+        conversation_summary = data.get("conversationSummary", conversation_summary)
+        last_user_input = data.get("lastUserInput", last_user_input)
+
+        # Use the conversation summary and last user input as context
+        system_message = {
+            "role": "system",
+            "content": (
+                "You are a helpful assistant that creates a reflection-focused multiple-choice question "
+                "based on the user's conversation history and their latest input. "
+                "Provide a question with four concise options, tailored to this context."
+            )
+        }
+
+        messages = [
+            system_message,
+            {
+                "role": "user",
+                "content": (
+                    f"Here is the conversation summary so far:\n{conversation_summary}\n\n"
+                    f"The user's latest input was:\n{last_user_input}\n\n"
+                    "Using these details, generate a single multiple-choice question with four answer options."
+                )
+            }
+        ]
+
+        # Call GPT to generate the question and options
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            temperature=0.7,
+            max_tokens=200,
+        )
+
+        response_text = response.choices[0].message["content"].strip()
+        lines = response_text.split("\n")
+        if len(lines) < 5:
+            return jsonify({"error": "Invalid response format"}), 500
+
+        question = lines[0]
+        options = lines[1:5]
+        return jsonify({"question": question, "options": options})
+    except Exception as e:
+        logger.error(f"Error in /generate_think_smaller: {e}")
+        return jsonify({"error": "Failed to generate question"}), 500
+
+# ----------------------------------------------------------------
+# Function which generates a summary
+# ----------------------------------------------------------------
+@app.route("/summarize_text", methods=["POST"])
+def summarize_text_endpoint():
+    try:
+        data = request.get_json()
+        # Accept input under either 'text' or 'choice' for compatibility
+        input_text = data.get("text") or data.get("choice", "")
+        if not input_text:
+            return jsonify({"summary": ""}), 400
+
+        summary = summarize_text(input_text)
+        return jsonify({"summary": summary})
+    except Exception as e:
+        logger.error(f"Error in /summarize_text: {e}")
+        return jsonify({"summary": ""}), 500
+
+# ----------------------------------------------------------------
 # Function which simply tells the user how to think bigger with a powerful hypothetical question
 # ----------------------------------------------------------------
 @app.route("/generate_think_bigger", methods=["POST"])

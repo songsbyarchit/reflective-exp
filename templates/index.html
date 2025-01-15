@@ -186,6 +186,51 @@
             text-align: center; /* Center the text */
         }
 
+        .multiple-choice-container {
+            margin: 20px 0;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+            text-align: center;
+        }
+
+        .multiple-choice-option {
+            display: inline-block;
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: white;
+            color: black;
+            border: 2px solid black;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .multiple-choice-option:hover {
+            background-color: #f0f0f0;
+            color: #333;
+        }
+
+        .no-thanks-button,
+        .add-to-writing-button {
+            margin: 5px;
+            padding: 10px 20px;
+            font-size: 14px;
+            background-color: #e0e0e0;
+            color: black;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .no-thanks-button:hover,
+        .add-to-writing-button:hover {
+            background-color: #ccc;
+            color: #000;
+        }
+
         @keyframes fadePlaceholder {
             0%, 100% {
                 opacity: 0.3; /* Faded state */
@@ -424,9 +469,96 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
+document.addEventListener("DOMContentLoaded", () => {
+    const thinkSmallerButton = document.getElementById("think-smaller");
+    if (!thinkSmallerButton) {
+        console.error("'Think Smaller' button not found in DOM.");
+        return;
+    }
+
+    thinkSmallerButton.addEventListener("click", async () => {
+    try {
+        const userInput = inputBox.value.trim(); // Get the user's input
+        lastUserInput = userInput; // Update lastUserInput
+
+        if (userInput) {
+            // Update conversation summary with user input
+            const summaryResponse = await fetch("/summarize_text", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: userInput }),
+            });
+
+            const summaryData = await summaryResponse.json();
+            if (summaryData.summary) {
+                conversationSummary += ` | ${summaryData.summary}`;
+            } else {
+                console.error("Error: Missing summary in response.");
+            }
+        }
+
+        // Fetch the multiple-choice question
+        const response = await fetch("/generate_think_smaller", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                conversationSummary,
+                lastUserInput, // Include lastUserInput for context
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch Think Smaller question");
+        }
+
+        const data = await response.json();
+        if (!data.question || !data.options || data.options.length < 1) {
+            throw new Error("Invalid response format from /generate_think_smaller");
+        }
+
+        // Clear any previous question containers
+        document.querySelectorAll(".multiple-choice-container").forEach((container) => container.remove());
+
+        const questionContainer = document.createElement("div");
+        questionContainer.className = "multiple-choice-container";
+
+        // Add question
+        const questionText = document.createElement("p");
+        questionText.textContent = data.question;
+        questionContainer.appendChild(questionText);
+
+        // Add options
+        data.options.forEach((option) => {
+            const optionButton = document.createElement("button");
+            optionButton.className = "multiple-choice-option";
+            optionButton.textContent = option;
+
+            // Handle option click
+            optionButton.addEventListener("click", async () => {
+                conversationSummary += ` | ${option}`;
+                lastUserInput = option;
+
+                // Remove question container
+                questionContainer.remove();
+            });
+
+            questionContainer.appendChild(optionButton);
+        });
+
+        // Append to chat box
+        chatBox.appendChild(questionContainer);
+
+    } catch (error) {
+        console.error("Error in Think Smaller logic:", error);
+        alert("An error occurred while generating Think Smaller question. Please try again.");
+    }
+});
+});
+
     </script>
 <div id="latest-ai-response"></div>
 <button id="help-me-reflect">Help me reflect 🧠</button>
+<div id="think-smaller-question" class="smaller-question"></div>
 <button id="think-smaller" class="small-button">Think Smaller 🎯</button>
 <div id="think-bigger-question" class="hypothetical-question"></div>
 <button id="think-bigger" class="small-button">Think Bigger 💡</button>
