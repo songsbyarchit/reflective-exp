@@ -344,9 +344,9 @@ def get_response():
         response_message = ""
 
         if not user_input:  # If the user hasn't entered any input (first question)
-            stage_questions = STAGE_QUESTIONS.get(current_stage, {}).get("questions", [])
-            response_message = random.choice(stage_questions) if stage_questions else "How can I help you reflect?"
-            logger.debug(f"Generated default question for stage {current_stage}: {response_message}")
+            # If no discrepancy, generate a new question using OpenAI based on the conversation summary
+            response_message = stage_chat(current_stage, conversation_summary, user_input)
+            logger.debug(f"No discrepancy detected. Generated new question via OpenAI: {response_message}")
         else:
             # Detect discrepancies (added or removed text)
             added_text = "".join([char for char in user_input if char not in last_user_input])
