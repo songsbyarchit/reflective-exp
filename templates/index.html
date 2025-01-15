@@ -20,13 +20,13 @@
         }
 
         .chat-container {
-            width: 100vw; /* Full width of the viewport */
-            height: 100vh; /* Full height of the viewport */
+            width: 100vw; /* Full viewport width */
+            height: 80%; /* Use 100% instead of 100vh to account for quirks */
             display: flex;
             flex-direction: column; /* Stack items vertically */
-            align-items: center; /* Center items horizontally */
-            justify-content: center; /* Center items vertically */
-            overflow: hidden; /* Hide content that overflows */
+            align-items: center; /* Center horizontally */
+            justify-content: center; /* Center vertically */
+            overflow: hidden; /* Hide overflow */
             margin: 0;
             padding: 0;
         }
@@ -43,15 +43,18 @@
             display: flex; /* Use flexbox for alignment */
         }
 
+
         .user {
-            text-align: center; /* Center-align user messages */
-            font-size: 20px; /* Set default font size */
-            font-family: 'Georgia', serif; /* Use the same font as input */
-            color: #999; /* Initial color for unsent messages */
+            text-align: center; /* Match input alignment */
+            font-size: 40px; /* Match input font size */
+            font-family: 'Georgia', serif; /* Match input font family */
+            color: #999; /* Light gray before send */
+            line-height: 1.5; /* Match input line height */
+            white-space: pre-wrap; /* Preserve line breaks */
         }
 
         .user.sent {
-            color: #333; /* Darken color for sent messages */
+            color: #333; /* Darken color after send */
         }
 
         .ai {
@@ -62,19 +65,21 @@
             text-align: left; /* Align text to the left */
         }
 
+
         #input-box {
-            width: 35%; /* Narrower width for focus */
-            border: none; /* Remove borders */
-            outline: none; /* Remove default outline */
-            font-size: 40px; /* Larger font size for input */
-            font-family: 'Georgia', serif; /* Match input font with messages */
-            color: #333; /* Dark text */
-            background-color: transparent; /* Transparent background */
-            line-height: 1.5; /* Consistent spacing between lines */
+            width: 35%; /* Input width */
+            border: none;
+            outline: none;
+            font-size: 40px; /* Match font size */
+            font-family: 'Georgia', serif; /* Match font family */
+            color: #333; /* Text color */
+            background-color: transparent;
+            line-height: 1.5; /* Match line height */
             resize: none; /* Prevent resizing */
-            overflow-y: auto; /* Enable scrolling for long inputs */
-            text-align: center; /* Center-align text */
+            overflow-y: auto; /* Allow scrolling for long input */
+            text-align: center; /* Center align text */
             margin: 0 auto; /* Center horizontally */
+            white-space: pre-wrap; /* Preserve line breaks in typed text */
         }
     </style>
 </head>
@@ -133,24 +138,26 @@
             userMessage.textContent = message;
             chatBox.appendChild(userMessage);
 
-            // Retain input box position
+            // Retain input box position and preserve styling
             userMessage.style.cssText = `
                 font-size: ${getComputedStyle(inputBox).fontSize};
                 font-family: ${getComputedStyle(inputBox).fontFamily};
-                color: #333; /* Darken the text after sending */
+                color: ${getComputedStyle(inputBox).color}; /* Use input box color */
                 text-align: ${getComputedStyle(inputBox).textAlign};
                 line-height: ${getComputedStyle(inputBox).lineHeight};
-                width: ${inputBox.offsetWidth}px;
-                margin: 0 auto;
+                width: ${inputBox.offsetWidth}px; /* Match input box width */
+                margin: 0 auto; /* Center horizontally */
                 white-space: pre-wrap; /* Preserve line breaks */
+                word-wrap: break-word; /* Prevent overflow of long words */
             `;
-
-                setTimeout(() => {
-                    userMessage.classList.add("sent"); // Darken text after sending
-                }, 100);
 
             // Play sound for sending a message
             playSound("send-sound");
+
+            // Darken text after a slight delay for visual effect
+            setTimeout(() => {
+                userMessage.style.color = "#333"; // Darker text color after sending
+            }, 100);
 
             // Show typing bubble
             addMessage("", "ai", true); // Add typing bubble
@@ -158,7 +165,7 @@
             try {
                 // Calculate dynamic delay based on message length
                 const messageLength = message.length;
-                let delay = Math.min(messageLength / 40, 4) * 1000; // Calculate delay in milliseconds (max 4 seconds)
+                let delay = Math.min(messageLength / 40, 4) * 1000; // Delay up to 4 seconds
 
                 // Simulate typing delay
                 await new Promise((resolve) => setTimeout(resolve, delay));
@@ -178,7 +185,7 @@
                 // Play sound for receiving a message
                 playSound("receive-sound");
 
-                // Add AI message
+                // Add AI response
                 addMessage(data.message, "ai");
             } catch (error) {
                 console.error("Error fetching response:", error);
@@ -186,9 +193,9 @@
                 if (typingBubble) typingBubble.parentNode.remove();
             }
         }
-
-        function handleKeyPress(event) {
+                function handleKeyPress(event) {
             if (event.key === "Enter") {
+                event.preventDefault(); // Prevents adding a new line
                 const message = inputBox.value.trim();
                 if (message) {
                     inputBox.value = "";
