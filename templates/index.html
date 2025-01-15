@@ -6,8 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reflection Tool</title>
     <style>
-        html {
-            scroll-behavior: smooth; /* Global behavior */
+        html, body {
+            height: 100%; /* Ensure body takes full height */
+            overflow: auto; /* Allow scrollbar only if content exceeds the height */
         }
 
         body {
@@ -21,12 +22,12 @@
 
         .chat-container {
             width: 100vw; /* Full viewport width */
-            height: 100vh; /* Full viewport height */
+            height: 100%; /* Full height relative to body */
             display: flex;
             flex-direction: column; /* Stack items vertically */
             align-items: center; /* Center horizontally */
             justify-content: flex-start; /* center content vertically */
-            overflow-y: auto; /* Allow vertical scrolling */
+            overflow-y: hidden; /* Allow vertical scrolling */
             overflow-x: hidden; /* Prevent horizontal scrolling */
             padding-top: calc(50vh - 50px); /* Adjust padding for vertical centering */
             transition: padding-top 0.3s ease-in-out; /* Smooth slide transition */
@@ -343,6 +344,8 @@
             console.error("Error fetching AI response:", error);
         });
     });
+
+    document.body.style.overflow = (document.documentElement.scrollHeight > window.innerHeight) ? 'auto' : 'hidden';
 
     document.getElementById("input-box").addEventListener("input", function () {
         this.style.height = "auto"; // Reset height to calculate the new height
