@@ -74,6 +74,7 @@
 
 
         #input-box {
+            animation: fadePlaceholder 4s infinite; /* Add fade animation */
             display: none;
             margin-top: 20px; /* Adds spacing below the last message */
             margin-left: auto;
@@ -94,11 +95,21 @@
             position: relative; /* Removes fixed or absolute positioning */
         }
 
+        #input-box::placeholder {
+            font-weight: 100; /* Makes the placeholder text thinner */
+        }
+
+        @keyframes fadePlaceholder {
+            0%, 100% {
+                opacity: 0.3; /* Faded state */
+            }
+            50% {
+                opacity: 0.7; /* Fully visible */
+            }
+        }
     </style>
 </head>
-<body>
-<audio id="send-sound" src="{{ url_for('static', filename='send.mp3') }}"></audio>
-<audio id="receive-sound" src="{{ url_for('static', filename='receive.mp3') }}"></audio>    
+<body>  
     <div class="chat-container">
         <div id="chat-box"></div>
         <div class="typing-indicator" id="typing-indicator">AI is typing...</div>
@@ -108,19 +119,6 @@
         const chatBox = document.getElementById("chat-box");
         const typingIndicator = document.getElementById("typing-indicator");
         const inputBox = document.getElementById("input-box");
-
-        function playSound(audioId) {
-            const sound = document.getElementById(audioId);
-            if (sound) {
-                // Check if playback is allowed
-                if (sound.paused || sound.readyState === 4) {
-                    sound.currentTime = 0; // Reset playback to the start
-                    sound.play().catch((error) => {
-                        console.error("Sound playback failed:", error);
-                    });
-                }
-            }
-        }
 
         function addMessage(content, sender, isTyping = false) {
             const messageDiv = document.createElement("div");
@@ -169,9 +167,6 @@
                 justify-content: center; /* Center content horizontally within flexbox */
             `;
 
-            // Play sound for sending a message
-            playSound("send-sound");
-
             // Darken text after a slight delay for visual effect
             setTimeout(() => {
                 userMessage.style.color = "#333"; // Darker text color after sending
@@ -200,14 +195,16 @@
                 const typingBubble = document.querySelector(".typing-bubble");
                 if (typingBubble) typingBubble.parentNode.remove();
 
-                // Play sound for receiving a message
-                playSound("receive-sound");
-
                 // Add AI response
                 addMessage(data.message, "ai");
 
                 // Show the input box after AI response
                 inputBox.style.display = "block";
+                                inputBox.style.animation = "none"; // Reset animation
+                setTimeout(() => {
+                    inputBox.style.animation = "fadePlaceholder 4s infinite"; // Restart placeholder fade animation
+                }, 10); // Small delay to allow animation reset
+
             } catch (error) {
                 console.error("Error fetching response:", error);
                 const typingBubble = document.querySelector(".typing-bubble");
@@ -253,6 +250,8 @@
     document.getElementById("input-box").addEventListener("input", function () {
         this.style.height = "auto"; // Reset height to calculate the new height
         this.style.height = this.scrollHeight + "px"; // Adjust height based on content
+        this.style.animation = "none"; // Stop placeholder fade animation
+        this.style.color = "#333"; // Revert text color to normal
     });
     </script>
 </body>
