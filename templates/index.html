@@ -141,16 +141,16 @@
             transition: background-color 0.3s ease, color 0.3s ease;
         }
 
-        #think-bigger {
-            top: calc(50% - 80px); /* Adjust position for the first button */
+        #think-smaller {
+            top: calc(50% - 180px); /* Adjust position for the first button */
         }
 
-        #think-smaller {
+        #think-bigger {
             top: calc(50%); /* Adjust position for the second button */
         }
 
         #think-louder {
-            top: calc(50% + 80px); /* Adjust position for the third button */
+            top: calc(50% + 180px); /* Adjust position for the third button */
         }
 
         .small-button:hover {
@@ -375,11 +375,29 @@ document.getElementById("input-box").addEventListener("input", function () {
     this.style.color = "#333"; // Revert text color to normal
     scrollToCenter(); // Keep the content centered as the user types
 });
+
+document.getElementById("think-bigger").addEventListener("click", async () => {
+    try {
+        const response = await fetch("/generate_think_bigger", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({})
+        });
+
+        const data = await response.json();
+        const thinkBiggerDiv = document.getElementById("latest-ai-response");
+
+        // Update the content of "latest-ai-response" to show the hypothetical question
+        thinkBiggerDiv.textContent = data.question || "What could you do if there were no limits?";
+    } catch (error) {
+        console.error("Error fetching 'Think Bigger' question:", error);
+    }
+});
     </script>
 <div id="latest-ai-response"></div>
 <button id="help-me-reflect">Help me reflect 🧠</button>
-<button id="think-bigger" class="small-button">Think Bigger 💡</button>
 <button id="think-smaller" class="small-button">Think Smaller 🎯</button>
+<button id="think-bigger" class="small-button">Think Bigger 💡</button>
 <button id="think-louder" class="small-button">Think Out Loud 🎙️</button>
 </body>
 </html>
