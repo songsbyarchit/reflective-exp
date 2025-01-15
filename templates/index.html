@@ -160,8 +160,8 @@
 
         #latest-ai-response {
             position: fixed;
-            top: 50%;
-            left: 15%; /* Same as the "Help me reflect" button */
+            top: 40%; /* Align slightly above the button */
+            left: 15%; /* Match the button's horizontal alignment */
             transform: translateY(-50%);
             font-family: 'Inter', sans-serif;
             font-size: 16px;
@@ -169,7 +169,7 @@
             color: #333;
             max-width: 250px;
             line-height: 1.5;
-            text-align: center; /* Center-align the text */
+            text-align: center; /* Align text to the left for readability */
         }
 
         @keyframes fadePlaceholder {
@@ -376,18 +376,7 @@ document.getElementById("input-box").addEventListener("input", function () {
     scrollToCenter(); // Keep the content centered as the user types
 });
     </script>
-<div id="latest-ai-response" style="
-    position: fixed;
-    top: 35%;
-    left: 20px;
-    transform: translateY(-50%);
-    font-family: 'Inter', sans-serif;
-    font-size: 16px;
-    font-weight: 500;
-    color: #333;
-    max-width: 250px;
-    line-height: 1.5;
-"></div>
+<div id="latest-ai-response"></div>
 <button id="help-me-reflect">Help me reflect 🧠</button>
 <button id="think-bigger" class="small-button">Think Bigger 💡</button>
 <button id="think-smaller" class="small-button">Think Smaller 🎯</button>
