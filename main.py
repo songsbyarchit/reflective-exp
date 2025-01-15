@@ -12,6 +12,8 @@ load_dotenv()  # Loads .env file
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+last_user_input = ""  # Store the last state of the user's input
+
 # ----------------------------------------------------------------
 # A dictionary to store instructions/intent for each psychological stage
 # ----------------------------------------------------------------
@@ -345,26 +347,41 @@ current_stage = 1  # Default starting stage
 
 @app.route("/get_response", methods=["POST"])
 def get_response():
-    global conversation_summary, current_stage  # Maintain state between requests
+    global conversation_summary, current_stage, last_user_input  # Maintain state between requests
 
-    user_input = request.json.get("message", "")  # Get user input from the frontend
+    user_input = request.json.get("message", "").strip()  # Get user input from the frontend
     response_message = ""
 
     try:
-        if user_input.strip() == "":  # If the user hasn't entered any input (first question)
+        if not user_input:  # If the user hasn't entered any input (first question)
             response_message = "Hey, so what brings you here? :)"
         else:
-            # Summarize user input and append it to the conversation summary
-            summarized_input = summarize_text(user_input)
-            conversation_summary += f" | {summarized_input}"  # Update global conversation state
+            # Detect discrepancies (added or removed text)
+            added_text = "".join([char for char in user_input if char not in last_user_input])
+            removed_text = "".join([char for char in last_user_input if char not in user_input])
+            discrepancy = added_text or removed_text
 
-            # Determine if we need to move to the next stage
-            new_stage = determine_next_stage(user_input, current_stage, conversation_summary)
-            if new_stage != current_stage:
-                current_stage = new_stage  # Update the stage globally
+            # Update last_user_input
+            last_user_input = user_input
 
-            # Generate GPT response for the current stage
-            response_message = stage_chat(current_stage, conversation_summary, user_input)
+            if discrepancy:  # If there's a change
+                if added_text:
+                    summarized_input = summarize_text(added_text)
+                else:
+                    summarized_input = summarize_text(conversation_summary)
+
+                # Update conversation summary
+                conversation_summary += f" | {summarized_input}"
+
+                # Determine if we need to move to the next stage
+                new_stage = determine_next_stage(user_input, current_stage, conversation_summary)
+                if new_stage != current_stage:
+                    current_stage = new_stage
+
+                # Generate GPT response for the current stage
+                response_message = stage_chat(current_stage, conversation_summary, user_input)
+            else:
+                response_message = "No changes detected. Let's continue reflecting!"
 
     except Exception as e:
         print(f"Error in /get_response: {e}")

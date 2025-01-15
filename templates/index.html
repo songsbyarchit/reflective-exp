@@ -25,12 +25,15 @@
             display: flex;
             flex-direction: column; /* Stack items vertically */
             align-items: center; /* Center horizontally */
-            justify-content: flex-start; /* Align content at the top */
-            overflow: hidden; /* Prevent overflow */
+            justify-content: flex-start; /* center content vertically */
+            overflow-y: auto; /* Allow vertical scrolling */
+            overflow-x: hidden; /* Prevent horizontal scrolling */
+            padding-top: calc(50vh - 50px); /* Adjust padding for vertical centering */
+            transition: padding-top 0.3s ease-in-out; /* Smooth slide transition */
         }
 
         #chat-box {
-            flex-grow: 1; /* Allow chat-box to grow and take remaining space */
+            flex-grow: 0; /* Allow chat-box to grow and take remaining space */
             overflow-y: auto; /* Enable vertical scrolling only when necessary */
             width: 100%; /* Take full width of the container */
             padding: 20px; /* Add spacing inside the chat box */
@@ -91,12 +94,33 @@
             overflow-y: auto;
             text-align: center;
             white-space: pre-wrap;
-            display: block;
             position: relative; /* Removes fixed or absolute positioning */
         }
 
         #input-box::placeholder {
             font-weight: 100; /* Makes the placeholder text thinner */
+        }
+
+        #help-me-reflect {
+            position: fixed;
+            top: 50%;
+            left: 20px;
+            transform: translateY(-50%);
+            padding: 15px 25px;
+            font-size: 18px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 700; /* Bold text */
+            background-color: white;
+            color: black;
+            border: 2px solid black; /* Thick border */
+            border-radius: 50px; /* Fully rounded corners */
+            cursor: pointer;
+            transition: background-color 0.3s ease, color 0.3s ease; /* Smooth hover effect */
+        }
+
+        #help-me-reflect:hover {
+            background-color: #f0f0f0; /* Slightly darker gray on hover */
+            color: #333; /* Dark gray text */
         }
 
         @keyframes fadePlaceholder {
@@ -113,12 +137,51 @@
     <div class="chat-container">
         <div id="chat-box"></div>
         <div class="typing-indicator" id="typing-indicator">AI is typing...</div>
-    <textarea id="input-box" placeholder="Start typing your reflection here..." onkeypress="handleKeyPress(event)"></textarea>
+    <textarea id="input-box" placeholder="Hey, what brings you here? :)" onkeypress="handleKeyPress(event)"></textarea>
     </div>   
     <script>
         const chatBox = document.getElementById("chat-box");
         const typingIndicator = document.getElementById("typing-indicator");
         const inputBox = document.getElementById("input-box");
+
+        function scrollToCenter() {
+            const inputBoxRect = inputBox.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const scrollOffset = window.scrollY || document.documentElement.scrollTop;
+            const newScrollPosition = Math.max(0, scrollOffset + inputBoxRect.top - (viewportHeight / 2) + (inputBoxRect.height / 2));
+            const threshold = 1; // Minimal threshold for responsiveness
+
+            function smoothScroll(start, end, duration) {
+                const startTime = performance.now();
+
+                function step(currentTime) {
+                    const elapsedTime = currentTime - startTime;
+                    const progress = Math.min(elapsedTime / duration, 1);
+                    const ease = progress < 0.5
+                        ? 2 * progress * progress
+                        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+                    window.scrollTo(0, start + (end - start) * ease);
+
+                    if (elapsedTime < duration) {
+                        requestAnimationFrame(step);
+                    }
+                }
+
+                requestAnimationFrame(step);
+            }
+
+            if (Math.abs(window.scrollY - newScrollPosition) > threshold) {
+            smoothScroll(window.scrollY, newScrollPosition, 300); // Adjust duration as needed
+            }       
+        }
+
+        debounceTimeout = setTimeout(() => {
+            this.style.height = "auto"; // Reset height to calculate the new height
+            this.style.height = this.scrollHeight + "px"; // Adjust height based on content
+            this.style.animation = "none"; // Stop placeholder fade animation
+            this.style.color = "#333"; // Revert text color to normal
+            scrollToCenter(); // Center the input box vertically
+        }, 1); // Reduce debounce delay
 
         function addMessage(content, sender, isTyping = false) {
             const messageDiv = document.createElement("div");
@@ -145,11 +208,8 @@
         }
 
         async function sendMessage(message) {
-            const userMessage = document.createElement("div");
-            userMessage.className = "message user sent";
-            userMessage.textContent = message;
-            inputBox.style.display = "none"; // Hide input box when user sends a message
-            chatBox.appendChild(userMessage);
+            inputBox.value = message; // Keep the user's input editable in the input box
+            inputBox.style.display = "block"; // Ensure the input box is visible
 
             // Retain input box position and preserve styling
             userMessage.style.cssText = `
@@ -186,8 +246,9 @@
                 const response = await fetch("/get_response", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message }),
+                    body: JSON.stringify({ message: inputBox.value }),
                 });
+
 
                 const data = await response.json();
 
@@ -216,13 +277,16 @@
                 event.preventDefault(); // Prevents adding a new line
                 const message = inputBox.value.trim();
                 if (message) {
-                    inputBox.value = "";
+                    inputBox.blur(); // Ensure focus remains for user edits.
                     sendMessage(message);
                 }
             }
         }
 
         document.addEventListener("DOMContentLoaded", () => {
+            inputBox.style.display = "block"; // Ensure the input box is visible
+            inputBox.focus(); // Set focus on the input box for user interaction
+            scrollToCenter(); // Center the input box vertically on load            
         // Simulate the first AI message on page load
         const chatBox = document.getElementById("chat-box");
         const typingIndicator = document.getElementById("typing-indicator");
@@ -237,9 +301,8 @@
             body: JSON.stringify({ message: "" }) // Empty message to trigger the first question
         })
         .then((response) => response.json())
-        .then((data) => {
+        .then(() => {
             typingIndicator.style.display = "none";
-            addMessage(data.message, "ai"); // Add AI message to chat
         })
         .catch((error) => {
             typingIndicator.style.display = "none";
@@ -252,7 +315,38 @@
         this.style.height = this.scrollHeight + "px"; // Adjust height based on content
         this.style.animation = "none"; // Stop placeholder fade animation
         this.style.color = "#333"; // Revert text color to normal
+        scrollToCenter(); // Center the input box vertically
     });
+
+    document.getElementById("help-me-reflect").addEventListener("click", async () => {
+        const response = await fetch("/get_response", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message: inputBox.value }),
+        });
+
+        const data = await response.json();
+
+        // Display AI response outside the container
+        const aiResponseDiv = document.getElementById("latest-ai-response");
+        aiResponseDiv.textContent = data.message; // Replace old AI response with the new one
+
+        // Do not append AI responses to the chat container
+    });
+
     </script>
+<div id="latest-ai-response" style="
+    position: fixed;
+    top: 35%;
+    left: 20px;
+    transform: translateY(-50%);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    color: #333;
+    max-width: 250px;
+    line-height: 1.5;
+"></div>
+<button id="help-me-reflect">Help me reflect</button>
 </body>
 </html>
