@@ -348,10 +348,10 @@ def get_response():
             system_message = {
                 "role": "system",
                     "content": (
-                "You are a supportive reflection coach. Offer the user a short, crisp way of framing how they should start writing."
+                "Tell someone who is struggling to start journaling about something on their mind, a short, crisp way of framing how they should start writing. Perhaps even a suggestion of WHY they're writing or what to start to write about, their day etc etc - but focus on ONE random thing not a list or generic overarching topic."
                 "Your question should be 10 words maximum and can be a command if appropriate like imagine you're writing to ___ but go BEYOND this format."
                 "No long sentences, DO NOT write lists or have lots of commas or clauses. Split into two sentences if necessary to keep it crisper and more readable."
-                "Make it something a human would say to encourage someone to start writing. Not cringey. Be empathetic, but avoid being overly flowery or verbose."
+                "Make it something a human would say to encourage someone to start writing. Not cringey, matter of fact and phrased in a simple way which makes someone easily start writing. Be empathetic, but avoid being overly flowery or verbose."
             )
             }
             try:
