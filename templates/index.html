@@ -6,6 +6,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reflection Tool</title>
     <style>
+        html {
+            scroll-behavior: smooth; /* Smooth scrolling for long conversations */
+        }
         .typing-bubble {
             display: flex;
             align-items: center;
@@ -52,32 +55,59 @@
             }
         }
         body {
-            background-color: #1e1e1e;
-            color: #fff;
-            font-family: 'Inter', sans-serif; /* Popular for web apps */
-            font-size: 18px; /* Bigger text */
+            background-color: #f9f9f9; /* Light mode background */
+            color: #333; /* Dark text */
+            font-family: 'Georgia', serif; /* Modern serif font for sleek appearance */
+            font-size: 18px; /* Maintain readability */
+            margin: 0;
+            padding: 0;
         }
         .chat-container {
-            max-width: 800px; /* Wider container */
-            margin: 50px auto;
+            width: 100vw; /* Full viewport width */
+            height: 100vh; /* Full viewport height */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             padding: 20px;
-            border-radius: 10px;
-            background-color: #333;
-            box-shadow: 0px 0px 10px #000;
+            background-color: #f9f9f9; /* Light background */
+            overflow: hidden; /* Prevent scrollbars from appearing */
+        }
+
+        #chat-box {
+            max-height: 400px; /* Restrict height for scrollability */
+            overflow-y: auto; /* Enable scrolling when needed */
+            margin-bottom: 20px;
+            padding-right: 10px; /* Spacing for scrollbar */
+        }
+
+        .bubble {
+            font-size: 14px; /* Smaller font for replies */
+            line-height: 1.5;
         }
         .message {
             margin: 10px 0;
             display: flex;
         }
         .user {
-            justify-content: flex-end;
+            justify-content: flex-start; /* Align user input like AI responses */
+            color: #999; /* Light color for typing */
+            font-size: 20px; /* Match input font size */
+            margin-bottom: 10px;
         }
-                .user .bubble {
+        .user .bubble {
             background-color: #d3d3d3; /* Much lighter gray */
             color: #000; /* Black text */
         }
+        .user.sent {
+            color: #333; /* Darker font after sending */
+        }
         .ai {
-            justify-content: flex-start;
+            text-align: left; /* Align text on the left side */
+            font-size: 16px; /* Smaller font for AI */
+            color: #555; /* Subtle text color */
+            margin-left: 20px; /* Create margin on the left */
+            margin-bottom: 15px;
         }
         .ai .bubble {
             background-color: #0078d4;
@@ -97,11 +127,19 @@
             margin: 10px 0; /* Add some spacing */
         }
         #input-box {
-            width: calc(100% - 20px);
-            padding: 10px;
-            border: none;
-            border-radius: 10px;
-            margin-top: 10px;
+            width: 60%; /* Smaller width for a focused typing area */
+            height: auto; /* Adjust height dynamically */
+            max-height: 50vh; /* Limit vertical height */
+            border: none; /* No borders */
+            outline: none;
+            font-size: 20px; /* Adjust font size for typing */
+            font-family: 'Georgia', serif; /* Consistent font */
+            color: #333; /* Text color */
+            background-color: transparent; /* Transparent background */
+            line-height: 1.8; /* Add spacing for readability */
+            resize: none; /* Disable resizing */
+            overflow-y: auto; /* Enable scrolling for long inputs */
+            text-align: center; /* Center-align text for immersion */
         }
         @keyframes bounce-in-right {
             0% {
@@ -136,7 +174,20 @@
         }
 
         .ai .bubble {
-            animation: bounce-in-left 0.3s ease-out;
+            position: relative; /* No absolute positioning */
+            left: 0;
+            max-width: 40%; /* Restrict width for readability */
+            background: none; /* Remove background color */
+            color: #333; /* Darker text for contrast */
+            font-size: 16px; /* Smaller font for AI responses */
+            padding: 0; /* Remove padding */
+            margin: 10px 0; /* Space between messages */
+            border-radius: 0; /* Remove border radius */
+            box-shadow: none; /* Remove shadow */
+            word-wrap: break-word; /* Prevent long words from breaking layout */
+        }
+        .message.user .bubble {
+            display: none; /* Prevent user input from being duplicated in the chat history */
         }
     </style>
 </head>
@@ -146,7 +197,7 @@
     <div class="chat-container">
         <div id="chat-box"></div>
         <div class="typing-indicator" id="typing-indicator">AI is typing...</div>
-        <input id="input-box" type="text" placeholder="Type your message..." onkeypress="handleKeyPress(event)">
+    <textarea id="input-box" placeholder="Start typing your reflection here..." onkeypress="handleKeyPress(event)"></textarea>
     </div>   
     <script>
         const chatBox = document.getElementById("chat-box");
@@ -182,18 +233,22 @@
                 bubble.appendChild(dots);
                 messageDiv.appendChild(bubble);
             } else {
-                const bubble = document.createElement("div");
-                bubble.className = "bubble";
-                bubble.textContent = content;
-                messageDiv.appendChild(bubble);
+                messageDiv.textContent = content;
             }
 
             chatBox.appendChild(messageDiv);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            chatBox.scrollIntoView({ behavior: "smooth", block: "end" });
         }
 
         async function sendMessage(message) {
-            addMessage(message, "user");
+            const userMessage = document.createElement("div");
+                userMessage.className = "message user";
+                userMessage.textContent = message;
+                chatBox.appendChild(userMessage);
+
+                setTimeout(() => {
+                    userMessage.classList.add("sent"); // Darken text after sending
+                }, 100);
 
             // Play sound for sending a message
             playSound("send-sound");
@@ -266,6 +321,11 @@
             typingIndicator.style.display = "none";
             console.error("Error fetching AI response:", error);
         });
+    });
+
+    document.getElementById("input-box").addEventListener("input", function () {
+        this.style.height = "auto"; // Reset height to calculate the new height
+        this.style.height = this.scrollHeight + "px"; // Adjust height based on content
     });
     </script>
 </body>
