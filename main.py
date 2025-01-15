@@ -250,10 +250,11 @@ def stage_chat(stage_id, conversation_summary, user_input):
 @app.route("/generate_think_smaller", methods=["POST"])
 def generate_think_smaller():
     global conversation_summary, last_user_input
-
+    logger.debug(f"Entered /generate_think_smaller with conversationSummary: {conversation_summary}, lastUserInput: {last_user_input}")
     try:
         # Get the updated conversation summary and last user input from the frontend
         data = request.get_json()
+        logger.debug(f"Parsed request JSON: {data}")
         conversation_summary = data.get("conversationSummary", conversation_summary)
         last_user_input = data.get("lastUserInput", last_user_input)
 
@@ -261,9 +262,12 @@ def generate_think_smaller():
         system_message = {
             "role": "system",
             "content": (
-                "You are a helpful assistant that creates a reflection-focused multiple-choice question "
-                "based on the user's conversation history and their latest input. "
-                "Provide a question with four concise options, tailored to this context."
+                "You are a thoughtful assistant that creates reflection-focused multiple-choice questions. "
+                "These questions are not meant to test the user's knowledge or have right or wrong answers. "
+                "Instead, they are designed to help the user think more deeply about what they've said and continue journaling "
+                "in a more guided and discrete way. The goal is to provide an easy break from long-form writing while encouraging "
+                "reflection through thought-provoking options which take them deeper in the direcion in which they've already been reflecting. Tailor your question and four concise answer options to the user's "
+                "conversation history and latest input. The length of each option MUST be a maximum of 15 characters so it neatly fits on one line."
             )
         }
 
@@ -279,6 +283,7 @@ def generate_think_smaller():
             }
         ]
 
+        logger.debug(f"Calling OpenAI with conversationSummary: {conversation_summary} and lastUserInput: {last_user_input}")
         # Call GPT to generate the question and options
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
@@ -288,15 +293,22 @@ def generate_think_smaller():
         )
 
         response_text = response.choices[0].message["content"].strip()
+        logger.debug(f"Received OpenAI response: {response_text}")
         lines = response_text.split("\n")
         if len(lines) < 5:
+            logger.warning(f"Invalid response format: {response_text}")
             return jsonify({"error": "Invalid response format"}), 500
 
         question = lines[0]
         options = lines[1:5]
-        return jsonify({"question": question, "options": options})
+        logger.debug(f"Returning question: {question} with options: {options}")
+        if len(options) == 4:
+            return jsonify({"question": question, "options": options})
+        else:
+            logger.error(f"Invalid options generated: {options}")
+            return jsonify({"error": "Failed to generate valid options"}), 500
     except Exception as e:
-        logger.error(f"Error in /generate_think_smaller: {e}")
+        logger.error(f"Error in /generate_think_smaller: {e}", exc_info=True)
         return jsonify({"error": "Failed to generate question"}), 500
 
 # ----------------------------------------------------------------
