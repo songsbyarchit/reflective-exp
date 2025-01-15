@@ -205,45 +205,23 @@ def stage_chat(stage_id, conversation_summary, user_input):
     stage_name = STAGES[stage_id]["name"]
     stage_instruction = STAGES[stage_id]["instruction"]
 
-    # Determine if we ask a stage-specific or hypothetical question (50/50 chance)
-    if stage_id != 7:  # Exclude Stage 7 from hypothetical logic
-        is_hypothetical = random.choice([True, False])
-    else:
-        is_hypothetical = False  # Always ask Stage 7's predefined guidance question
-
-    if is_hypothetical:
-        # Hypothetical question prompt formatting with an example
-        system_message = {
-            "role": "system",
-            "content": (
-                f"You are a highly skilled reflection coach with 50 years' experience. "
-                f"Your role is to ask powerful, thought-provoking hypothetical questions "
-                f"that are tailored to the issue the user is discussing.\n\n"
-                f"Example of formatting a hypothetical question:\n"
-                f"- User input: 'I feel stuck and don’t know how to move forward.'\n"
-                f"'If you could imagine yourself taking a single step forward, "
-                f"even if you weren’t sure where it leads, what would that step look like?'\n\n"
-                f"Tailor the following hypothetical question based on the user's input: {user_input}"
-            )
-        }
-    else:
-        # Stage-specific question prompt formatting with an example
-        system_message = {
-            "role": "system",
-            "content": (
-                f"You are a highly skilled reflection coach with 50 years' experience. "
-                f"Your role is to ask stage-specific questions that align with the current stage's goal "
-                f"while tailoring the question to the user’s specific issue.\n\n"
-                f"Stage Context:\n"
-                f"- Current Stage: {stage_id} - {STAGES[stage_id]['name']}\n"
-                f"- Stage Goal: {STAGES[stage_id]['instruction']}\n\n"
-                f"Example of formatting a stage-specific question:\n"
-                f"- User input: 'I always feel like I’m failing.'\n"
-                f"- Stage: Identify and Challenge Limiting Beliefs (Stage 4)\n"
-                f"'When you think about times you’ve succeeded, how does that change your perspective on failure?'\n\n"
-                f"Now, ask a stage-specific question based on the user's input: {user_input}"
-            )
-        }
+    # Always ask a generic stage-specific question
+    system_message = {
+        "role": "system",
+        "content": (
+            f"You are a highly skilled reflection coach with 50 years' experience. "
+            f"Your role is to ask stage-specific questions that align with the current stage's goal "
+            f"while tailoring the question to the user’s specific issue.\n\n"
+            f"Stage Context:\n"
+            f"- Current Stage: {stage_id} - {STAGES[stage_id]['name']}\n"
+            f"- Stage Goal: {STAGES[stage_id]['instruction']}\n\n"
+            f"Example of formatting a stage-specific question:\n"
+            f"- User input: 'I always feel like I’m failing.'\n"
+            f"- Stage: Identify and Challenge Limiting Beliefs (Stage 4)\n"
+            f"'When you think about times you’ve succeeded, how does that change your perspective on failure?'\n\n"
+            f"Now, ask a stage-specific question based on the user's input: {user_input}"
+        )
+    }
 
     # API logic for generating the response
     try:
