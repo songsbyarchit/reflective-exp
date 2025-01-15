@@ -245,6 +245,71 @@ def stage_chat(stage_id, conversation_summary, user_input):
         return "I'm sorry, I encountered an error."
 
 # ----------------------------------------------------------------
+# Function which simply tells the user how to think bigger with a powerful hypothetical question
+# ----------------------------------------------------------------
+@app.route("/generate_think_bigger", methods=["POST"])
+def generate_think_bigger():
+    global conversation_summary, last_user_input
+
+    try:
+        # Get user input if provided
+        user_input = request.json.get("message", "").strip()
+
+        if user_input:
+            # Always update last_user_input and summarize before generating a question
+            last_user_input = user_input
+            summarized_input = summarize_text(user_input)
+            if conversation_summary == "No conversation yet.":
+                conversation_summary = summarized_input
+            else:
+                conversation_summary = f"{conversation_summary} | {summarized_input}"
+            logger.debug(f"Updated last_user_input: {last_user_input}")
+            logger.debug(f"Updated conversation_summary: {conversation_summary}")
+
+        logger.debug(f"Conversation summary being passed to OpenAI: {conversation_summary}")
+        logger.debug(f"Last user input being passed to OpenAI: {last_user_input}")
+
+        # Prepare the OpenAI request
+        system_message = {
+            "role": "system",
+            "content": (
+                "You are a skilled reflection coach. Based on the user's input, craft a vivid and realistic scenario that directly relates to their concern or situation. "
+                "The scenario should immerse them in a specific, relatable situation that resonates with their input, helping them see possibilities or alternatives. "
+                "End the scenario with a highly specific and open-ended reflective question that encourages them to think deeply and explore actionable ideas. "
+                "Avoid abstract, overly metaphorical, or flowery language. Keep the scenario relevant and focused on their context. 20 words maximum."
+            )
+        }
+
+        messages = [
+            system_message,
+            {
+                "role": "user",
+                "content": (
+                    f"The conversation summary so far is:\n{conversation_summary}\n\n"
+                    f"The user's last input was:\n{last_user_input}\n\n"
+                    f"Using these details, craft a hypothetical question that feels tailored to them."
+                )
+            }
+        ]
+
+        # Call OpenAI to generate the question
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            temperature=0.7,
+            max_tokens=100,
+        )
+
+        hypothetical_question = response.choices[0].message["content"].strip()
+        logger.debug(f"Generated 'Think Bigger' question: {hypothetical_question}")
+        return jsonify({"question": hypothetical_question})
+
+    except Exception as e:
+        logger.error(f"Error generating 'Think Bigger' question: {e}", exc_info=True)
+        return jsonify({"question": "What could you do if there were no limits?"})
+
+
+# ----------------------------------------------------------------
 # Simple function to decide whether to move to the next stage
 # (You can implement more advanced NLP-based logic here)
 # ----------------------------------------------------------------
@@ -339,6 +404,13 @@ def get_response():
         logger.debug(f"Incoming POST request: {request.json}")
 
         user_input = request.json.get("message", "").strip()  # Get user input from the frontend
+
+        if user_input:
+            last_user_input = user_input  # Update global last_user_input
+            summarized_input = summarize_text(user_input)  # Summarize the new input
+            conversation_summary = f"{conversation_summary} | {summarized_input}".strip(" | ")  # Append and clean summary
+            logger.debug(f"Updated last_user_input: {last_user_input}")
+            logger.debug(f"Updated conversation_summary: {conversation_summary}")
         logger.debug(f"User input received: {user_input}")
 
         response_message = ""

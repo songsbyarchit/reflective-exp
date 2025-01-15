@@ -142,7 +142,7 @@
         }
 
         #think-smaller {
-            top: calc(50% - 180px); /* Adjust position for the first button */
+            top: calc(50% - 250px); /* Adjust position for the first button */
         }
 
         #think-bigger {
@@ -150,7 +150,7 @@
         }
 
         #think-louder {
-            top: calc(50% + 180px); /* Adjust position for the third button */
+            top: calc(50% + 250px); /* Adjust position for the third button */
         }
 
         .small-button:hover {
@@ -170,6 +170,20 @@
             color: #8a8a8a;
             line-height: 1.5;
             text-align: center; /* Align text for readability */
+        }
+
+        .hypothetical-question {
+            position: absolute;
+            right: 10%; /* Align with the button */
+            bottom: calc(53% + 10px); /* Position above the Think Bigger button */
+            width: 250px; /* Match button width */
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            font-weight: 500;
+            font-style: italic;
+            color: #8a8a8a;
+            line-height: 1.5;
+            text-align: center; /* Center the text */
         }
 
         @keyframes fadePlaceholder {
@@ -376,27 +390,45 @@ document.getElementById("input-box").addEventListener("input", function () {
     scrollToCenter(); // Keep the content centered as the user types
 });
 
-document.getElementById("think-bigger").addEventListener("click", async () => {
-    try {
-        const response = await fetch("/generate_think_bigger", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({})
+document.addEventListener("DOMContentLoaded", () => {
+    const thinkBiggerButton = document.getElementById("think-bigger");
+    if (thinkBiggerButton) {
+        thinkBiggerButton.addEventListener("click", async () => {
+            try {
+                const message = inputBox.value.trim(); // Get the user's input from the input box
+                if (!message) {
+                    console.error("No input provided.");
+                    return; // Prevent the request if the input is empty
+                }
+
+                const response = await fetch("/generate_think_bigger", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message }) // Pass the user input to the backend
+                });
+
+                const data = await response.json();
+                const thinkBiggerDiv = document.getElementById("think-bigger-question");
+
+                if (thinkBiggerDiv) {
+                    thinkBiggerDiv.textContent = data.question || "What could you do if there were no limits?";
+                } else {
+                    console.error("'think-bigger-question' div not found in DOM.");
+                }
+            } catch (error) {
+                console.error("Error fetching 'Think Bigger' question:", error);
+            }
         });
-
-        const data = await response.json();
-        const thinkBiggerDiv = document.getElementById("latest-ai-response");
-
-        // Update the content of "latest-ai-response" to show the hypothetical question
-        thinkBiggerDiv.textContent = data.question || "What could you do if there were no limits?";
-    } catch (error) {
-        console.error("Error fetching 'Think Bigger' question:", error);
+    } else {
+        console.error("'think-bigger' button not found in DOM.");
     }
 });
+
     </script>
 <div id="latest-ai-response"></div>
 <button id="help-me-reflect">Help me reflect 🧠</button>
 <button id="think-smaller" class="small-button">Think Smaller 🎯</button>
+<div id="think-bigger-question" class="hypothetical-question"></div>
 <button id="think-bigger" class="small-button">Think Bigger 💡</button>
 <button id="think-louder" class="small-button">Think Out Loud 🎙️</button>
 </body>
