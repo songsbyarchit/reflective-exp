@@ -7,187 +7,74 @@
     <title>Reflection Tool</title>
     <style>
         html {
-            scroll-behavior: smooth; /* Smooth scrolling for long conversations */
-        }
-        .typing-bubble {
-            display: flex;
-            align-items: center;
-            max-width: 70%;
-            padding: 10px;
-            border-radius: 15px;
-            background-color: #0078d4;
-            color: #fff;
-            font-size: 16px;
-            box-shadow: 0px 2px 5px #000;
-            font-style: italic;
-            position: relative; /* Needed for dot placement */
+            scroll-behavior: smooth; /* Global behavior */
         }
 
-        .typing-dots {
-            display: flex;
-            gap: 4px;
-        }
-
-        .typing-dots span {
-            width: 8px;
-            height: 8px;
-            background-color: #fff;
-            border-radius: 50%;
-            animation: typing-animation 1.5s infinite;
-        }
-
-        .typing-dots span:nth-child(2) {
-            animation-delay: 0.3s;
-        }
-
-        .typing-dots span:nth-child(3) {
-            animation-delay: 0.6s;
-        }
-
-        @keyframes typing-animation {
-            0%, 80%, 100% {
-                opacity: 0;
-                transform: scale(0.8);
-            }
-            40% {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
         body {
-            background-color: #f9f9f9; /* Light mode background */
-            color: #333; /* Dark text */
-            font-family: 'Georgia', serif; /* Modern serif font for sleek appearance */
-            font-size: 18px; /* Maintain readability */
+            background-color: #f9f9f9; /* Light background */
+            color: #333; /* Text color */
+            font-family: 'Georgia', serif; /* Default font */
+            font-size: 18px; /* Base font size */
+            margin: 0; /* Remove default margins */
+            padding: 0; /* Remove default padding */
+        }
+
+        .chat-container {
+            width: 100vw; /* Full width of the viewport */
+            height: 100vh; /* Full height of the viewport */
+            display: flex;
+            flex-direction: column; /* Stack items vertically */
+            align-items: center; /* Center items horizontally */
+            justify-content: center; /* Center items vertically */
+            overflow: hidden; /* Hide content that overflows */
             margin: 0;
             padding: 0;
         }
-        .chat-container {
-            width: 100vw; /* Full viewport width */
-            height: 100vh; /* Full viewport height */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            background-color: #f9f9f9; /* Light background */
-            overflow: hidden; /* Prevent scrollbars from appearing */
-        }
 
         #chat-box {
-            max-height: 400px; /* Restrict height for scrollability */
-            overflow-y: auto; /* Enable scrolling when needed */
-            margin-bottom: 20px;
-            padding-right: 10px; /* Spacing for scrollbar */
+            max-height: 400px; /* Limit height for scrolling */
+            overflow-y: auto; /* Enable vertical scrolling */
+            width: 100%; /* Take full width of the container */
+            margin-bottom: 20px; /* Space below the chat box */
         }
 
-        .bubble {
-            font-size: 14px; /* Smaller font for replies */
-            line-height: 1.5;
-        }
         .message {
-            margin: 10px 0;
-            display: flex;
+            margin: 10px 0; /* Spacing between messages */
+            display: flex; /* Use flexbox for alignment */
         }
+
         .user {
-            justify-content: flex-start; /* Align user input like AI responses */
-            color: #999; /* Light color for typing */
-            font-size: 20px; /* Match input font size */
-            margin-bottom: 10px;
+            text-align: center; /* Center-align user messages */
+            font-size: 20px; /* Set default font size */
+            font-family: 'Georgia', serif; /* Use the same font as input */
+            color: #999; /* Initial color for unsent messages */
         }
-        .user .bubble {
-            background-color: #d3d3d3; /* Much lighter gray */
-            color: #000; /* Black text */
-        }
+
         .user.sent {
-            color: #333; /* Darker font after sending */
+            color: #333; /* Darken color for sent messages */
         }
+
         .ai {
-            text-align: left; /* Align text on the left side */
-            font-size: 16px; /* Smaller font for AI */
-            color: #555; /* Subtle text color */
-            margin-left: 20px; /* Create margin on the left */
-            margin-bottom: 15px;
-        }
-        .ai .bubble {
-            background-color: #0078d4;
-            color: #fff;
-        }
-        .bubble {
-            max-width: 70%;
-            padding: 10px;
-            border-radius: 15px;
-            box-shadow: 0px 2px 5px #000;
-            font-size: 16px; /* Bubble text size */
-        }
-        .typing-indicator {
-            display: none; /* Initially hidden */
-            color: #aaa;
-            font-style: italic;
-            margin: 10px 0; /* Add some spacing */
-        }
-        #input-box {
-            width: 60%; /* Smaller width for a focused typing area */
-            height: auto; /* Adjust height dynamically */
-            max-height: 50vh; /* Limit vertical height */
-            border: none; /* No borders */
-            outline: none;
-            font-size: 20px; /* Adjust font size for typing */
-            font-family: 'Georgia', serif; /* Consistent font */
-            color: #333; /* Text color */
-            background-color: transparent; /* Transparent background */
-            line-height: 1.8; /* Add spacing for readability */
-            resize: none; /* Disable resizing */
-            overflow-y: auto; /* Enable scrolling for long inputs */
-            text-align: center; /* Center-align text for immersion */
-        }
-        @keyframes bounce-in-right {
-            0% {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            50% {
-                transform: translateX(-10%);
-                opacity: 1;
-            }
-            100% {
-                transform: translateX(0);
-            }
-        }
-
-        @keyframes bounce-in-left {
-            0% {
-                transform: translateX(-100%);
-                opacity: 0;
-            }
-            50% {
-                transform: translateX(10%);
-                opacity: 1;
-            }
-            100% {
-                transform: translateX(0);
-            }
-        }
-
-        .user .bubble {
-            animation: bounce-in-right 0.3s ease-out;
-        }
-
-        .ai .bubble {
-            position: relative; /* No absolute positioning */
-            left: 0;
             max-width: 40%; /* Restrict width for readability */
-            background: none; /* Remove background color */
-            color: #333; /* Darker text for contrast */
-            font-size: 16px; /* Smaller font for AI responses */
-            padding: 0; /* Remove padding */
-            margin: 10px 0; /* Space between messages */
-            border-radius: 0; /* Remove border radius */
-            box-shadow: none; /* Remove shadow */
-            word-wrap: break-word; /* Prevent long words from breaking layout */
+            font-size: 16px; /* Smaller font size */
+            color: #555; /* Subtle text color */
+            margin: 10px auto; /* Center AI messages */
+            text-align: left; /* Align text to the left */
         }
-        .message.user .bubble {
-            display: none; /* Prevent user input from being duplicated in the chat history */
+
+        #input-box {
+            width: 35%; /* Narrower width for focus */
+            border: none; /* Remove borders */
+            outline: none; /* Remove default outline */
+            font-size: 40px; /* Larger font size for input */
+            font-family: 'Georgia', serif; /* Match input font with messages */
+            color: #333; /* Dark text */
+            background-color: transparent; /* Transparent background */
+            line-height: 1.5; /* Consistent spacing between lines */
+            resize: none; /* Prevent resizing */
+            overflow-y: auto; /* Enable scrolling for long inputs */
+            text-align: center; /* Center-align text */
+            margin: 0 auto; /* Center horizontally */
         }
     </style>
 </head>
@@ -242,9 +129,21 @@
 
         async function sendMessage(message) {
             const userMessage = document.createElement("div");
-                userMessage.className = "message user";
-                userMessage.textContent = message;
-                chatBox.appendChild(userMessage);
+            userMessage.className = "message user sent";
+            userMessage.textContent = message;
+            chatBox.appendChild(userMessage);
+
+            // Retain input box position
+            userMessage.style.cssText = `
+                font-size: ${getComputedStyle(inputBox).fontSize};
+                font-family: ${getComputedStyle(inputBox).fontFamily};
+                color: #333; /* Darken the text after sending */
+                text-align: ${getComputedStyle(inputBox).textAlign};
+                line-height: ${getComputedStyle(inputBox).lineHeight};
+                width: ${inputBox.offsetWidth}px;
+                margin: 0 auto;
+                white-space: pre-wrap; /* Preserve line breaks */
+            `;
 
                 setTimeout(() => {
                     userMessage.classList.add("sent"); // Darken text after sending
