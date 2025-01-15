@@ -343,10 +343,29 @@ def get_response():
 
         response_message = ""
 
-        if not user_input:  # If the user hasn't entered any input (first question)
-            # If no discrepancy, generate a new question using OpenAI based on the conversation summary
-            response_message = stage_chat(current_stage, conversation_summary, user_input)
-            logger.debug(f"No discrepancy detected. Generated new question via OpenAI: {response_message}")
+        if not user_input:  # If the input box is empty when "Help Me Reflect" is pressed
+            # Prompt AI to generate a creative way to ease the user into writing
+            system_message = {
+                "role": "system",
+                    "content": (
+                "You are a supportive reflection coach. Offer the user a short, crisp way of framing how they should start writing."
+                "Your question should be 10 words maximum and can be a command if appropriate like imagine you're writing to ___ but go BEYOND this format."
+                "No long sentences, DO NOT write lists or have lots of commas or clauses. Split into two sentences if necessary to keep it crisper and more readable."
+                "Make it something a human would say to encourage someone to start writing. Not cringey. Be empathetic, but avoid being overly flowery or verbose."
+            )
+            }
+            try:
+                response = openai.ChatCompletion.create(
+                    model="gpt-3.5-turbo",
+                    messages=[system_message],
+                    temperature=0.8,  # Encourage creativity
+                    max_tokens=150,
+                )
+                response_message = response.choices[0].message["content"].strip()
+                logger.debug(f"Generated creative writing suggestion: {response_message}")
+            except Exception as e:
+                logger.error(f"Error generating creative writing suggestion: {e}", exc_info=True)
+                response_message = "Take your time. Imagine you're sharing your thoughts with someone who truly cares."
         else:
             # Detect discrepancies (added or removed text)
             added_text = "".join([char for char in user_input if char not in last_user_input])
