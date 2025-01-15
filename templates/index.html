@@ -104,8 +104,8 @@
 
         #help-me-reflect {
             position: fixed;
-            left: 20px; /* Align "Help me reflect" to the left side */
-            top: 50%;
+            left: 15%; /* Align "Help me reflect" to the left side */
+            top: 53%;
             transform: translateY(-50%);
             width: 250px; /* Make it the same size as other buttons */
             padding: 15px 35px;
@@ -127,7 +127,7 @@
 
         .small-button {
             position: fixed;
-            right: 20px; /* Align to the right side */
+            right: 10%; /* Align to the right side */
             width: 250px; /* Match the width of "Help me reflect" */
             padding: 15px 35px;
             font-size: 16px;
@@ -182,32 +182,10 @@
         function scrollToCenter() {
             const inputBoxRect = inputBox.getBoundingClientRect();
             const viewportHeight = window.innerHeight;
-            const scrollOffset = window.scrollY || document.documentElement.scrollTop;
-            const newScrollPosition = Math.max(0, scrollOffset + inputBoxRect.top - (viewportHeight / 2) + (inputBoxRect.height / 2));
-            const threshold = 1; // Minimal threshold for responsiveness
-
-            function smoothScroll(start, end, duration) {
-                const startTime = performance.now();
-
-                function step(currentTime) {
-                    const elapsedTime = currentTime - startTime;
-                    const progress = Math.min(elapsedTime / duration, 1);
-                    const ease = progress < 0.5
-                        ? 2 * progress * progress
-                        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
-                    window.scrollTo(0, start + (end - start) * ease);
-
-                    if (elapsedTime < duration) {
-                        requestAnimationFrame(step);
-                    }
-                }
-
-                requestAnimationFrame(step);
-            }
-
-            if (Math.abs(window.scrollY - newScrollPosition) > threshold) {
-            smoothScroll(window.scrollY, newScrollPosition, 300); // Adjust duration as needed
-            }       
+            const newPaddingTop = Math.max(0, (viewportHeight - inputBoxRect.height) / 2);
+            
+            // Update the padding-top of chat-container to create the smooth sliding effect
+            document.querySelector(".chat-container").style.paddingTop = `${newPaddingTop}px`;
         }
 
         debounceTimeout = setTimeout(() => {
@@ -352,7 +330,7 @@
         this.style.height = this.scrollHeight + "px"; // Adjust height based on content
         this.style.animation = "none"; // Stop placeholder fade animation
         this.style.color = "#333"; // Revert text color to normal
-        scrollToCenter(); // Center the input box vertically
+        scrollToCenter(); // Keep the content centered as the user types
     });
 
     document.getElementById("help-me-reflect").addEventListener("click", async () => {
@@ -387,6 +365,6 @@
 <button id="help-me-reflect">Help me reflect 🧠</button>
 <button id="think-bigger" class="small-button">Think Bigger 💡</button>
 <button id="think-smaller" class="small-button">Think Smaller 🎯</button>
-<button id="think-louder" class="small-button">Think Louder 🎙️</button>
+<button id="think-louder" class="small-button">Think Out Loud 🎙️</button>
 </body>
 </html>
