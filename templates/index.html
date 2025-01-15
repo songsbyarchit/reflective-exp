@@ -159,17 +159,17 @@
         }
 
         #latest-ai-response {
-            position: fixed;
-            top: 40%; /* Align slightly above the button */
-            left: 15%; /* Match the button's horizontal alignment */
-            transform: translateY(-50%);
+            position: absolute; /* Use absolute positioning relative to the container */
+            left: 15%; /* Align horizontally with the button */
+            width: 250px; /* Match the button width */
+            bottom: calc(53% + 10px); /* Position 80px above the "Help Me Reflect" button */
             font-family: 'Inter', sans-serif;
+            font-style: italic;
             font-size: 16px;
             font-weight: 500;
-            color: #333;
-            max-width: 250px;
+            color: #8a8a8a;
             line-height: 1.5;
-            text-align: center; /* Align text to the left for readability */
+            text-align: center; /* Align text for readability */
         }
 
         @keyframes fadePlaceholder {
