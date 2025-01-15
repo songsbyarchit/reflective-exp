@@ -104,10 +104,10 @@
 
         #help-me-reflect {
             position: fixed;
-            left: 15%; /* Align "Help me reflect" to the left side */
-            top: 53%;
+            left: 15%; /* Same horizontal position as the question */
+            top: 53%; /* Adjusted to ensure it is slightly below the question */
             transform: translateY(-50%);
-            width: 250px; /* Make it the same size as other buttons */
+            width: 250px;
             padding: 15px 35px;
             font-size: 16px;
             font-family: 'Inter', sans-serif;
@@ -156,6 +156,20 @@
         .small-button:hover {
             background-color: #f0f0f0;
             color: #333;
+        }
+
+        #latest-ai-response {
+            position: fixed;
+            top: 50%;
+            left: 15%; /* Same as the "Help me reflect" button */
+            transform: translateY(-50%);
+            font-family: 'Inter', sans-serif;
+            font-size: 16px;
+            font-weight: 500;
+            color: #333;
+            max-width: 250px;
+            line-height: 1.5;
+            text-align: center; /* Center-align the text */
         }
 
         @keyframes fadePlaceholder {
@@ -296,10 +310,10 @@
             }
         }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            inputBox.style.display = "block"; // Ensure the input box is visible
-            inputBox.focus(); // Set focus on the input box for user interaction
-            scrollToCenter(); // Center the input box vertically on load            
+    document.addEventListener("DOMContentLoaded", () => {
+        inputBox.style.display = "block"; // Ensure the input box is visible
+        inputBox.focus(); // Set focus on the input box for user interaction
+        scrollToCenter(); // Center the input box vertically on load            
         // Simulate the first AI message on page load
         const chatBox = document.getElementById("chat-box");
         const typingIndicator = document.getElementById("typing-indicator");
@@ -321,34 +335,46 @@
             typingIndicator.style.display = "none";
             console.error("Error fetching AI response:", error);
         });
+
+        // Add event listener for the "Help Me Reflect" button
+        const helpMeReflectButton = document.getElementById("help-me-reflect");
+        if (helpMeReflectButton) {
+            helpMeReflectButton.addEventListener("click", async () => {
+                console.log("Help Me Reflect button clicked");
+
+                try {
+                    const response = await fetch("/get_response", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ message: inputBox.value }),
+                    });
+
+                    console.log("POST request sent:", { message: inputBox.value });
+
+                    const data = await response.json();
+                    console.log("Response received from server:", data);
+
+                    // Update the question display above the button
+                    const aiResponseDiv = document.getElementById("latest-ai-response");
+                    aiResponseDiv.textContent = data.message; // Replace the old question with the new one
+                } catch (error) {
+                    console.error("Error sending POST request:", error);
+                }
+            });
+        } else {
+            console.error("Help Me Reflect button not found in DOM.");
+        }
     });
 
-    document.body.style.overflow = (document.documentElement.scrollHeight > window.innerHeight) ? 'auto' : 'hidden';
+document.body.style.overflow = (document.documentElement.scrollHeight > window.innerHeight) ? 'auto' : 'hidden';
 
-    document.getElementById("input-box").addEventListener("input", function () {
-        this.style.height = "auto"; // Reset height to calculate the new height
-        this.style.height = this.scrollHeight + "px"; // Adjust height based on content
-        this.style.animation = "none"; // Stop placeholder fade animation
-        this.style.color = "#333"; // Revert text color to normal
-        scrollToCenter(); // Keep the content centered as the user types
-    });
-
-    document.getElementById("help-me-reflect").addEventListener("click", async () => {
-        const response = await fetch("/get_response", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: inputBox.value }),
-        });
-
-        const data = await response.json();
-
-        // Display AI response outside the container
-        const aiResponseDiv = document.getElementById("latest-ai-response");
-        aiResponseDiv.textContent = data.message; // Replace old AI response with the new one
-
-        // Do not append AI responses to the chat container
-    });
-
+document.getElementById("input-box").addEventListener("input", function () {
+    this.style.height = "auto"; // Reset height to calculate the new height
+    this.style.height = this.scrollHeight + "px"; // Adjust height based on content
+    this.style.animation = "none"; // Stop placeholder fade animation
+    this.style.color = "#333"; // Revert text color to normal
+    scrollToCenter(); // Keep the content centered as the user types
+});
     </script>
 <div id="latest-ai-response" style="
     position: fixed;

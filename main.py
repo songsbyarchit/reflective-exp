@@ -4,13 +4,18 @@ from dotenv import load_dotenv
 from flask import Flask, render_template, request, jsonify
 import random
 from questions import STAGE_QUESTIONS, HYPOTHETICAL_QUESTIONS
-
+import logging
+from flask_cors import CORS
 
 app = Flask(__name__, static_folder="static")
+CORS(app)
 
 load_dotenv()  # Loads .env file
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 last_user_input = ""  # Store the last state of the user's input
 
@@ -349,45 +354,63 @@ current_stage = 1  # Default starting stage
 def get_response():
     global conversation_summary, current_stage, last_user_input  # Maintain state between requests
 
-    user_input = request.json.get("message", "").strip()  # Get user input from the frontend
-    response_message = ""
+    logger.debug("Entered /get_response route")  # Maintain state between requests
 
     try:
+        # Log the incoming request
+        logger.debug(f"Incoming POST request: {request.json}")
+
+        user_input = request.json.get("message", "").strip()  # Get user input from the frontend
+        logger.debug(f"User input received: {user_input}")
+
+        response_message = ""
+
         if not user_input:  # If the user hasn't entered any input (first question)
-            response_message = "Hey, so what brings you here? :)"
+            stage_questions = STAGE_QUESTIONS.get(current_stage, {}).get("questions", [])
+            response_message = random.choice(stage_questions) if stage_questions else "How can I help you reflect?"
+            logger.debug(f"Generated default question for stage {current_stage}: {response_message}")
         else:
             # Detect discrepancies (added or removed text)
             added_text = "".join([char for char in user_input if char not in last_user_input])
             removed_text = "".join([char for char in last_user_input if char not in user_input])
-            discrepancy = added_text or removed_text
+            discrepancy = added_text.strip() or removed_text.strip()
+
+            logger.debug(f"Added text: {added_text}")
+            logger.debug(f"Removed text: {removed_text}")
 
             # Update last_user_input
             last_user_input = user_input
 
-            if discrepancy:  # If there's a change
-                if added_text:
+            if discrepancy:  # If there's a discrepancy (added or removed text)
+                if added_text.strip():
                     summarized_input = summarize_text(added_text)
                 else:
-                    summarized_input = summarize_text(conversation_summary)
+                    summarized_input = summarize_text(conversation_summary)  # Focus on the full context for removals
 
                 # Update conversation summary
                 conversation_summary += f" | {summarized_input}"
+                logger.debug(f"Updated conversation summary: {conversation_summary}")
 
-                # Determine if we need to move to the next stage
+                # Determine the next stage if needed
                 new_stage = determine_next_stage(user_input, current_stage, conversation_summary)
                 if new_stage != current_stage:
+                    logger.debug(f"Stage change detected: {current_stage} -> {new_stage}")
                     current_stage = new_stage
 
-                # Generate GPT response for the current stage
-                response_message = stage_chat(current_stage, conversation_summary, user_input)
+                # Generate a stage-specific response
+                response_message = stage_chat(current_stage, conversation_summary, discrepancy)
+                logger.debug(f"Generated response for stage {current_stage}: {response_message}")
             else:
-                response_message = "No changes detected. Let's continue reflecting!"
+                # If no discrepancy, generate another generic stage-specific question
+                stage_questions = STAGE_QUESTIONS.get(current_stage, {}).get("questions", [])
+                response_message = random.choice(stage_questions) if stage_questions else "Let's reflect further."
+                logger.debug(f"No discrepancy detected. Generated generic question: {response_message}")
+
+        return jsonify({"message": response_message})
 
     except Exception as e:
-        print(f"Error in /get_response: {e}")
-        response_message = "I'm sorry, something went wrong."
-
-    return jsonify({"message": response_message})
+        logger.error(f"Error in /get_response: {e}", exc_info=True)
+        return jsonify({"message": "I'm sorry, something went wrong."})
 
 # ----------------------------------------------------------------
 # Entry Point
