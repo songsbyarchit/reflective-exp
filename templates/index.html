@@ -21,21 +21,20 @@
 
         .chat-container {
             width: 100vw; /* Full viewport width */
-            height: 80%; /* Use 100% instead of 100vh to account for quirks */
+            height: 100vh; /* Full viewport height */
             display: flex;
             flex-direction: column; /* Stack items vertically */
             align-items: center; /* Center horizontally */
-            justify-content: center; /* Center vertically */
-            overflow: hidden; /* Hide overflow */
-            margin: 0;
-            padding: 0;
+            justify-content: flex-start; /* Align content at the top */
+            overflow: hidden; /* Prevent overflow */
         }
 
         #chat-box {
-            max-height: 400px; /* Limit height for scrolling */
-            overflow-y: auto; /* Enable vertical scrolling */
+            flex-grow: 1; /* Allow chat-box to grow and take remaining space */
+            overflow-y: auto; /* Enable vertical scrolling only when necessary */
             width: 100%; /* Take full width of the container */
-            margin-bottom: 20px; /* Space below the chat box */
+            padding: 20px; /* Add spacing inside the chat box */
+            box-sizing: border-box; /* Include padding in width/height calculation */
         }
 
         .message {
@@ -43,6 +42,13 @@
             display: flex; /* Use flexbox for alignment */
         }
 
+        .message.user {
+            margin-bottom: 50px; /* Add more space after user messages */
+        }
+
+        .message.ai {
+            margin-top: 50px; /* Add more space before AI messages */
+        }
 
         .user {
             text-align: center; /* Match input alignment */
@@ -60,27 +66,34 @@
         .ai {
             max-width: 40%; /* Restrict width for readability */
             font-size: 16px; /* Smaller font size */
-            color: #555; /* Subtle text color */
+            color: #888; /* Lighter text color */
+            font-style: italic; /* Italicize AI text */
             margin: 10px auto; /* Center AI messages */
             text-align: left; /* Align text to the left */
         }
 
 
         #input-box {
-            width: 35%; /* Input width */
+            display: none;
+            margin-top: 20px; /* Adds spacing below the last message */
+            margin-left: auto;
+            margin-right: auto;
+            width: 35%; /* Keep the input box width */
             border: none;
             outline: none;
-            font-size: 40px; /* Match font size */
-            font-family: 'Georgia', serif; /* Match font family */
-            color: #333; /* Text color */
+            font-size: 40px;
+            font-family: 'Georgia', serif;
+            color: #333;
             background-color: transparent;
-            line-height: 1.5; /* Match line height */
-            resize: none; /* Prevent resizing */
-            overflow-y: auto; /* Allow scrolling for long input */
-            text-align: center; /* Center align text */
-            margin: 0 auto; /* Center horizontally */
-            white-space: pre-wrap; /* Preserve line breaks in typed text */
+            line-height: 1.5;
+            resize: none;
+            overflow-y: auto;
+            text-align: center;
+            white-space: pre-wrap;
+            display: block;
+            position: relative; /* Removes fixed or absolute positioning */
         }
+
     </style>
 </head>
 <body>
@@ -130,12 +143,14 @@
 
             chatBox.appendChild(messageDiv);
             chatBox.scrollIntoView({ behavior: "smooth", block: "end" });
+            if (sender !== "user") chatBox.appendChild(inputBox); // Append input box only after AI response
         }
 
         async function sendMessage(message) {
             const userMessage = document.createElement("div");
             userMessage.className = "message user sent";
             userMessage.textContent = message;
+            inputBox.style.display = "none"; // Hide input box when user sends a message
             chatBox.appendChild(userMessage);
 
             // Retain input box position and preserve styling
@@ -143,12 +158,15 @@
                 font-size: ${getComputedStyle(inputBox).fontSize};
                 font-family: ${getComputedStyle(inputBox).fontFamily};
                 color: ${getComputedStyle(inputBox).color}; /* Use input box color */
-                text-align: ${getComputedStyle(inputBox).textAlign};
+                text-align: center; /* Always center-align text */
                 line-height: ${getComputedStyle(inputBox).lineHeight};
-                width: ${inputBox.offsetWidth}px; /* Match input box width */
+                max-width: 80%; /* Limit to 80% of the container for readability */
+                width: auto; /* Allow natural expansion of width */
                 margin: 0 auto; /* Center horizontally */
                 white-space: pre-wrap; /* Preserve line breaks */
                 word-wrap: break-word; /* Prevent overflow of long words */
+                display: flex;
+                justify-content: center; /* Center content horizontally within flexbox */
             `;
 
             // Play sound for sending a message
@@ -187,6 +205,9 @@
 
                 // Add AI response
                 addMessage(data.message, "ai");
+
+                // Show the input box after AI response
+                inputBox.style.display = "block";
             } catch (error) {
                 console.error("Error fetching response:", error);
                 const typingBubble = document.querySelector(".typing-bubble");
