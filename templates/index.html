@@ -453,6 +453,8 @@
             }
         }
 
+    document.body.style.overflow = (document.documentElement.scrollHeight > window.innerHeight) ? 'auto' : 'hidden';
+
     document.addEventListener("DOMContentLoaded", () => {
         inputBox.style.display = "block"; // Ensure the input box is visible
         inputBox.focus(); // Set focus on the input box for user interaction
@@ -508,8 +510,6 @@
             console.error("Help Me Reflect button not found in DOM.");
         }
     });
-
-document.body.style.overflow = (document.documentElement.scrollHeight > window.innerHeight) ? 'auto' : 'hidden';
 
 document.getElementById("input-box").addEventListener("input", function () {
     this.style.height = "auto"; // Reset height to calculate the new height
@@ -880,38 +880,61 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-    // Read Aloud
-    document.getElementById("read-aloud").addEventListener("click", () => {
-        const inputText = document.getElementById("input-box").value;
-        const speech = new SpeechSynthesisUtterance(inputText);
-        speech.lang = "en-US"; // Set language to English (US)
-        window.speechSynthesis.speak(speech);
-    });
-
-    // Copy Text
-    document.getElementById("copy-text").addEventListener("click", () => {
-        const inputText = document.getElementById("input-box").value;
-        navigator.clipboard.writeText(inputText).then(() => {
-            alert("Text copied to clipboard!");
-        }).catch((err) => {
-            console.error("Failed to copy text:", err);
+document.addEventListener("DOMContentLoaded", () => {
+    const readAloudButton = document.getElementById("read-aloud");
+    if (readAloudButton) {
+        readAloudButton.addEventListener("click", () => {
+            const inputText = document.getElementById("input-box").value;
+            const speech = new SpeechSynthesisUtterance(inputText);
+            speech.lang = "en-US"; // Set language to English (US)
+            window.speechSynthesis.speak(speech);
         });
-    });
+    } else {
+        console.error("'Read Aloud' button not found in DOM.");
+    }
 
-    // Download as PDF
-    document.getElementById("download-pdf").addEventListener("click", () => {
-        const inputText = document.getElementById("input-box").value;
-        const doc = new jsPDF(); // Requires jsPDF library
-        doc.text(inputText, 10, 10);
-        doc.save("journal-entry.pdf");
-    });
+    const copyTextButton = document.getElementById("copy-text");
+    if (copyTextButton) {
+        copyTextButton.addEventListener("click", async () => {
+            const inputText = document.getElementById("input-box").value.trim();
+            if (inputText) {
+                try {
+                    await navigator.clipboard.writeText(inputText);
+                    alert("Text copied to clipboard!");
+                } catch (err) {
+                    console.error("Failed to copy text:", err);
+                }
+            } else {
+                alert("There is no text to copy.");
+            }
+        });
+    } else {
+        console.error("'Copy Text' button not found in DOM.");
+    }
 
-    // Scrap (Clear Input)
-    document.getElementById("scrap").addEventListener("click", () => {
-        if (confirm("Are you sure you want to start again? This will erase your current entry.")) {
-            document.getElementById("input-box").value = "";
-        }
-    });
+    const downloadPdfButton = document.getElementById("download-pdf");
+    if (downloadPdfButton) {
+        downloadPdfButton.addEventListener("click", () => {
+            const inputText = document.getElementById("input-box").value;
+            const doc = new jsPDF(); // Requires jsPDF library
+            doc.text(inputText, 10, 10);
+            doc.save("journal-entry.pdf");
+        });
+    } else {
+        console.error("'Download PDF' button not found in DOM.");
+    }
+
+    const scrapButton = document.getElementById("scrap");
+    if (scrapButton) {
+        scrapButton.addEventListener("click", () => {
+            if (confirm("Are you sure you want to start again? This will erase your current entry.")) {
+                document.getElementById("input-box").value = "";
+            }
+        });
+    } else {
+        console.error("'Scrap' button not found in DOM.");
+    }
+});
 
     </script>
 <div id="latest-ai-response"></div>
@@ -922,10 +945,10 @@ document.addEventListener("DOMContentLoaded", () => {
 <button id="think-bigger" class="small-button">think bigger 💡</button>
 <button id="think-louder" class="small-button">think out loud 🎙️</button>
 <div class="bottom-buttons">
-    <button id="read-aloud">Read Aloud</button>
-    <button id="copy-text">Copy Text</button>
-    <button id="download-pdf">Download as PDF</button>
-    <button id="scrap">Scrap</button>
+    <button id="read-aloud">read aloud 🗣️</button>
+    <button id="copy-text">copy text 🧲</button>
+    <button id="download-pdf">download as PDF 💾</button>
+    <button id="scrap">scrap 🗑️ </button>
 </div>
 </body>
 </html>
