@@ -7,6 +7,8 @@ from questions import STAGE_QUESTIONS, HYPOTHETICAL_QUESTIONS
 import logging
 from flask_cors import CORS
 
+os.system("pip install -r requirements.txt")
+
 app = Flask(__name__, static_folder="static")
 CORS(app)
 
