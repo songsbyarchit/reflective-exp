@@ -264,10 +264,17 @@ def generate_think_smaller():
             "content": (
                 "You are a thoughtful assistant that creates reflection-focused multiple-choice questions. "
                 "These questions are not meant to test the user's knowledge or have right or wrong answers. "
-                "Instead, they are designed to help the user think more deeply about what they've said and continue journaling "
+                "Instead, they are designed to help the user think more deeply about THOUGHTS and FEELINGS they've mentioned and continue journaling "
                 "in a more guided and discrete way. The goal is to provide an easy break from long-form writing while encouraging "
-                "reflection through thought-provoking options which take them deeper in the direcion in which they've already been reflecting. Tailor your question and four concise answer options to the user's "
-                "conversation history and latest input. The length of each option MUST be a maximum of 15 characters so it neatly fits on one line."
+                "reflection through thought-provoking options which take them deeper in the direction in which they've already been reflecting. "
+                "Your output must strictly follow this exact format, including line breaks:\n\n"
+                "<Insert question here>\n"
+                "Option 1\n"
+                "Option 2\n"
+                "Option 3\n"
+                "Something else\n\n"
+                "Ensure the question is tailored to the user's input, and each option is concise (maximum 15 characters), realistic, and engaging. "
+                "The fourth option must always be 'Something Else.' Do not include any numbering, letters, or additional punctuation."
             )
         }
 
@@ -361,7 +368,7 @@ def generate_think_bigger():
                 "You are a skilled reflection coach. Based on the user's input, craft a vivid and realistic scenario that directly relates to their concern or situation. "
                 "The scenario should immerse them in a specific, relatable situation that resonates with their input, helping them see possibilities or alternatives. "
                 "End the scenario with a highly specific and open-ended reflective question that encourages them to think deeply and explore actionable ideas. "
-                "Avoid abstract, overly metaphorical, or flowery language. Keep the scenario relevant and focused on their context. 20 words maximum."
+                "Avoid abstract, overly metaphorical, or flowery language. Keep the scenario relevant and focused on their context. It must strictly be 20 words maximum."
             )
         }
 
@@ -481,7 +488,6 @@ current_stage = 1  # Default starting stage
 @app.route("/get_response", methods=["POST"])
 def get_response():
     global conversation_summary, current_stage, last_user_input  # Maintain state between requests
-
     logger.debug("Entered /get_response route")  # Maintain state between requests
 
     try:
@@ -491,25 +497,41 @@ def get_response():
         user_input = request.json.get("message", "").strip()  # Get user input from the frontend
 
         if user_input:
+            # Detect discrepancies directly by comparing current input with the last recorded input
+            discrepancy = user_input if user_input != last_user_input else None
             last_user_input = user_input  # Update global last_user_input
-            summarized_input = summarize_text(user_input)  # Summarize the new input
-            conversation_summary = f"{conversation_summary} | {summarized_input}".strip(" | ")  # Append and clean summary
-            logger.debug(f"Updated last_user_input: {last_user_input}")
-            logger.debug(f"Updated conversation_summary: {conversation_summary}")
-        logger.debug(f"User input received: {user_input}")
 
-        response_message = ""
+            if discrepancy:
+                summarized_input = summarize_text(discrepancy)  # Summarize the new input
+                conversation_summary = f"{conversation_summary} | {summarized_input}".strip(" | ")  # Append and clean summary
+                logger.debug(f"Updated conversation_summary: {conversation_summary}")
 
-        if not user_input:  # If the input box is empty when "Help Me Reflect" is pressed
-            # Prompt AI to generate a creative way to ease the user into writing
+                # Determine the next stage if needed
+                new_stage = determine_next_stage(user_input, current_stage, conversation_summary)
+                if new_stage != current_stage:
+                    logger.debug(f"Stage change detected: {current_stage} -> {new_stage}")
+                    current_stage = new_stage
+
+                # Generate a stage-specific response
+                response_message = stage_chat(current_stage, conversation_summary, discrepancy)
+                logger.debug(f"Generated response for stage {current_stage}: {response_message}")
+            else:
+                # No discrepancy, generate a generic AI-based question
+                logger.debug("No discrepancy detected. Generating question via AI route.")
+                response_message = stage_chat(current_stage, conversation_summary, user_input)
+                logger.debug(f"Generated AI-based question for stage {current_stage}: {response_message}")
+        else:
+            # If the input box is empty when "Help Me Reflect" is pressed
             system_message = {
                 "role": "system",
-                    "content": (
-                "Tell someone who is struggling to start journaling about something on their mind, a short, crisp way of framing how they should start writing. Perhaps even a suggestion of WHY they're writing or what to start to write about, their day etc etc - but focus on ONE random thing not a list or generic overarching topic."
-                "Your question should be 10 words maximum and can be a command if appropriate like imagine you're writing to ___ but go BEYOND this format."
-                "No long sentences, DO NOT write lists or have lots of commas or clauses. Split into two sentences if necessary to keep it crisper and more readable."
-                "Make it something a human would say to encourage someone to start writing. Not cringey, matter of fact and phrased in a simple way which makes someone easily start writing. Be empathetic, but avoid being overly flowery or verbose."
-            )
+                "content": (
+                    "Tell someone who is struggling to start journaling about something on their mind, a short, crisp way of framing how they should start writing. "
+                    "Perhaps even a suggestion of WHY they're writing or what to start to write about, their day etc etc - but focus on ONE random thing not a list or generic overarching topic. "
+                    "Your question should be 10 words maximum and can be a command if appropriate like imagine you're writing to ___ but go BEYOND this format. "
+                    "No long sentences, DO NOT write lists or have lots of commas or clauses. Split into two sentences if necessary to keep it crisper and more readable. "
+                    "Make it something a human would say to encourage someone to start writing. Not cringey, matter of fact and phrased in a simple way which makes someone easily start writing. "
+                    "Be empathetic, but avoid being overly flowery or verbose."
+                )
             }
             try:
                 response = openai.ChatCompletion.create(
@@ -523,42 +545,6 @@ def get_response():
             except Exception as e:
                 logger.error(f"Error generating creative writing suggestion: {e}", exc_info=True)
                 response_message = "Take your time. Imagine you're sharing your thoughts with someone who truly cares."
-        else:
-            # Detect discrepancies (added or removed text)
-            added_text = "".join([char for char in user_input if char not in last_user_input])
-            removed_text = "".join([char for char in last_user_input if char not in user_input])
-            discrepancy = added_text.strip() or removed_text.strip()
-
-            logger.debug(f"Added text: {added_text}")
-            logger.debug(f"Removed text: {removed_text}")
-
-            # Update last_user_input
-            last_user_input = user_input
-
-            if discrepancy:  # If there's a discrepancy (added or removed text)
-                if added_text.strip():
-                    summarized_input = summarize_text(added_text)
-                else:
-                    summarized_input = summarize_text(conversation_summary)  # Focus on the full context for removals
-
-                # Update conversation summary
-                conversation_summary += f" | {summarized_input}"
-                logger.debug(f"Updated conversation summary: {conversation_summary}")
-
-                # Determine the next stage if needed
-                new_stage = determine_next_stage(user_input, current_stage, conversation_summary)
-                if new_stage != current_stage:
-                    logger.debug(f"Stage change detected: {current_stage} -> {new_stage}")
-                    current_stage = new_stage
-
-                # Generate a stage-specific response
-                response_message = stage_chat(current_stage, conversation_summary, discrepancy)
-                logger.debug(f"Generated response for stage {current_stage}: {response_message}")
-            else:
-                # If no discrepancy, generate another generic stage-specific question
-                stage_questions = STAGE_QUESTIONS.get(current_stage, {}).get("questions", [])
-                response_message = random.choice(stage_questions) if stage_questions else "Let's reflect further."
-                logger.debug(f"No discrepancy detected. Generated generic question: {response_message}")
 
         return jsonify({"message": response_message})
 
