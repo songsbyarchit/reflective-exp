@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Personalised Reflection Tool</title>
@@ -292,6 +293,34 @@
             background-color: #333; /* Dark background */
             color: #fff; /* Light font color */
             transition: background-color 0.3s ease, color 0.3s ease; /* Smooth fade transition */
+        }
+
+        .bottom-buttons {
+            position: fixed;
+            bottom: 20px; /* Adjust distance from bottom */
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px; /* Spacing between buttons */
+        }
+
+        .bottom-buttons button {
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            padding: 10px 20px;
+            background-color: white;
+            color: black;
+            border: 2px solid black;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .bottom-buttons button:hover {
+            background-color: #333; /* Dark background */
+            color: #fff; /* Light font color */
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
     </style>
 </head>
@@ -851,6 +880,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
+    // Read Aloud
+    document.getElementById("read-aloud").addEventListener("click", () => {
+        const inputText = document.getElementById("input-box").value;
+        const speech = new SpeechSynthesisUtterance(inputText);
+        speech.lang = "en-US"; // Set language to English (US)
+        window.speechSynthesis.speak(speech);
+    });
+
+    // Copy Text
+    document.getElementById("copy-text").addEventListener("click", () => {
+        const inputText = document.getElementById("input-box").value;
+        navigator.clipboard.writeText(inputText).then(() => {
+            alert("Text copied to clipboard!");
+        }).catch((err) => {
+            console.error("Failed to copy text:", err);
+        });
+    });
+
+    // Download as PDF
+    document.getElementById("download-pdf").addEventListener("click", () => {
+        const inputText = document.getElementById("input-box").value;
+        const doc = new jsPDF(); // Requires jsPDF library
+        doc.text(inputText, 10, 10);
+        doc.save("journal-entry.pdf");
+    });
+
+    // Scrap (Clear Input)
+    document.getElementById("scrap").addEventListener("click", () => {
+        if (confirm("Are you sure you want to start again? This will erase your current entry.")) {
+            document.getElementById("input-box").value = "";
+        }
+    });
+
     </script>
 <div id="latest-ai-response"></div>
 <button id="help-me-reflect">help me reflect 🧠</button>
@@ -859,5 +921,11 @@ document.addEventListener("DOMContentLoaded", () => {
 <div id="think-bigger-question" class="hypothetical-question"></div>
 <button id="think-bigger" class="small-button">think bigger 💡</button>
 <button id="think-louder" class="small-button">think out loud 🎙️</button>
+<div class="bottom-buttons">
+    <button id="read-aloud">Read Aloud</button>
+    <button id="copy-text">Copy Text</button>
+    <button id="download-pdf">Download as PDF</button>
+    <button id="scrap">Scrap</button>
+</div>
 </body>
 </html>
