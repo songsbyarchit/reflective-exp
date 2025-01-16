@@ -555,6 +555,72 @@ def index():
 conversation_summary = "No conversation yet."  # Initialize summary globally
 current_stage = 1  # Default starting stage
 
+@app.route("/process_transcript", methods=["POST"])
+def process_transcript():
+    """
+    Process the transcript: clean it or summarize it.
+    """
+    try:
+        data = request.get_json()
+        transcript = data.get("transcript", "").strip()
+        process_type = data.get("type", "")
+
+        if not transcript or not process_type:
+            return jsonify({"error": "Missing transcript or process type"}), 400
+
+        if process_type == "cleaned":
+            # Use OpenAI API to clean the transcript
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are an assistant that cleans and improves transcripts while keeping the content of them exactly the same."},
+                    {
+                        "role": "user",
+                        "content": (
+                            "Clean and improve this transcript. The ONLY changes you'll make it removing repeated words, stutters, and fixing or replacing misrecognised words according to context about speech and pronouncation."
+                            "For example, if the transcript says 'The the weather is sun he,' it should be corrected to 'The weather is sunny.' See what I mean? Sun he sounds like sunny when said aloud quickly, but from context, we know that sunny is the correct choice."
+                            "Also add punctuation to make it readable:\n"
+                            f"{transcript}"
+                        ),
+                    },
+                ],
+                temperature=0.5,
+                max_tokens=500,
+            )
+            processed_text = response.choices[0].message["content"].strip()
+
+        elif process_type == "summary":
+            word_count = len(transcript.split())
+            target_word_count = max(1, word_count // 3)  # 1/3 of the original length
+
+            # Use OpenAI API to summarize the transcript
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are an assistant that summarizes transcripts concisely."},
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Summarize this transcript to approximately {target_word_count} words. "
+                            "Use as many original words as possible and keep it concise:\n"
+                            f"{transcript}"
+                        ),
+                    },
+                ],
+                temperature=0.5,
+                max_tokens=500,
+            )
+            processed_text = response.choices[0].message["content"].strip()
+
+        else:
+            return jsonify({"error": "Invalid process type"}), 400
+
+        return jsonify({"processedText": processed_text})
+
+    except Exception as e:
+        logger.error(f"Error processing transcript: {e}", exc_info=True)
+        return jsonify({"error": "Failed to process transcript"}), 500
+
 @app.route("/get_response", methods=["POST"])
 def get_response():
     global conversation_summary, current_stage, last_user_input  # Maintain state between requests

@@ -256,6 +256,37 @@
                 opacity: 0.7; /* Fully visible */
             }
         }
+
+        .think-out-loud-container {
+            position: fixed; /* Ensure it appears on the screen */
+            bottom: 10%; /* Adjust the position to make it visible */
+            left: 4%; /* Adjust the position to align with the layout */
+            background-color: #f9f9f9; /* Light background */
+            border-radius: 10px; /* Optional: Rounded corners */
+            padding: 20px; /* Add spacing around buttons */
+            z-index: 1000; /* Ensure it's above other elements */
+            display: flex; /* Align buttons in a row */
+            flex-direction: row; /* Horizontal alignment */
+            gap: 10px; /* Add spacing between buttons */
+        }
+
+        .think-out-loud-container button {
+            font-family: 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: bold;
+            color: #333;
+            background-color: #f9f9f9;
+            border: 2px solid #333;
+            border-radius: 5px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .think-out-loud-container button:hover {
+            background-color: #333;
+            color: #fff;
+        }
     </style>
 </head>
 <body>  
@@ -622,6 +653,196 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("An error occurred while generating Think Smaller question. Please try again.");
     }
 });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("DOMContentLoaded event fired.");
+    const thinkLouderButton = document.getElementById("think-louder");
+    
+    if (!thinkLouderButton) {
+        console.error("'Think Out Loud' button not found in DOM.");
+        return;
+    }
+    console.log("'Think Out Loud' button found. Adding click event listener.");
+
+    thinkLouderButton.addEventListener("click", () => {
+        console.log("'Think Out Loud' button clicked.");
+
+        // Check if SpeechRecognition is supported
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition) {
+            console.warn("Speech recognition is not supported in this browser.");
+            alert("Speech recognition is not supported in your browser.");
+            return;
+        }
+        console.log("Speech recognition supported. Proceeding.");
+
+        // Avoid re-creating the container if it already exists
+        let container = document.querySelector(".think-out-loud-container");
+        if (container) {
+            console.log("Container for 'Think Out Loud' already exists. Skipping creation.");
+        } else {
+            console.log("Creating new container for 'Think Out Loud' functionality.");
+            container = document.createElement("div");
+            container.className = "think-out-loud-container";
+
+            // Add buttons for duration selection
+            const durations = [15, 30, 60];
+            durations.forEach((duration) => {
+                console.log(`Creating button for ${duration} seconds.`);
+                const button = document.createElement("button");
+                button.textContent = `${duration} seconds`;
+                button.addEventListener("click", () => {
+                    console.log(`Start recording button clicked for ${duration} seconds.`);
+                    startRecording(duration);
+                });
+                container.appendChild(button);
+            });
+
+            // Add Stop Recording button
+            const stopButton = document.createElement("button");
+            stopButton.textContent = "Stop Recording";
+            stopButton.id = "stop-recording";
+            stopButton.style.display = "none"; // Initially hidden
+            stopButton.addEventListener("click", () => {
+                console.log("Stop recording button clicked.");
+                stopRecording();
+            });
+            container.appendChild(stopButton);
+
+            // Append the container to the body
+            document.body.appendChild(container);
+            console.log("'Think Out Loud' container added to the DOM.");
+            console.log("Container HTML:", container.outerHTML);
+        }
+    });
+
+    let recognition;
+    let isRecording = false;
+    let transcript = "";
+
+    function startRecording(duration) {
+        console.log(`Initializing recording for ${duration} seconds.`);
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.continuous = true;
+        recognition.interimResults = true;
+
+        transcript = ""; // Reset transcript
+        isRecording = true;
+
+        // Hide duration buttons
+        const durationButtons = document.querySelectorAll(".think-out-loud-container button:not(#stop-recording)");
+        durationButtons.forEach(button => button.style.display = "none");
+
+        // Show the stop recording button
+        const stopButton = document.getElementById("stop-recording");
+        if (stopButton) {
+            stopButton.style.display = "block";
+        } else {
+            console.warn("Stop button not found in DOM. Skipping display toggle.");
+        }
+
+        recognition.onresult = (event) => {
+            console.log("Speech recognition result received.");
+            transcript = Array.from(event.results)
+                .map((result) => result[0].transcript)
+                .join("");
+            console.log(`Current transcript: ${transcript}`);
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Speech recognition error occurred:", event.error);
+        };
+
+        console.log("Starting speech recognition.");
+        recognition.start();
+
+        // Auto-stop after the selected duration
+        setTimeout(() => {
+            console.log(`Timeout reached. Auto-stopping recording after ${duration} seconds.`);
+            if (isRecording) stopRecording();
+        }, duration * 1000);
+    }
+
+    function stopRecording() {
+        console.log("Stopping recording.");
+        if (!isRecording || !recognition) {
+            console.warn("No recording in progress or recognition not initialized.");
+            return;
+        }
+
+        recognition.stop();
+        isRecording = false;
+
+        const stopButton = document.getElementById("stop-recording");
+        if (stopButton) {
+            stopButton.style.display = "none"; // Hide stop button
+        }
+
+        // Clear the current container and add final options
+        const container = document.querySelector(".think-out-loud-container");
+        if (container) {
+            container.innerHTML = ""; // Clear the container
+
+            // Add "Record Again" button
+            const recordAgainButton = document.createElement("button");
+            recordAgainButton.textContent = "Record Again";
+            recordAgainButton.addEventListener("click", () => {
+                container.innerHTML = ""; // Reset container
+                thinkLouderButton.click(); // Reinitialize the process
+            });
+            container.appendChild(recordAgainButton);
+
+            // Add "Add Cleaned Transcript" button
+            const addCleanedTranscriptButton = document.createElement("button");
+            addCleanedTranscriptButton.textContent = "Add Cleaned Transcript";
+            addCleanedTranscriptButton.addEventListener("click", () => processTranscript("cleaned"));
+            container.appendChild(addCleanedTranscriptButton);
+
+            // Add "Add Summary" button
+            const addSummaryButton = document.createElement("button");
+            addSummaryButton.textContent = "Add Summary";
+            addSummaryButton.addEventListener("click", () => processTranscript("summary"));
+            container.appendChild(addSummaryButton);
+
+            // Add "No Thanks" button
+            const noThanksButton = document.createElement("button");
+            noThanksButton.textContent = "No Thanks";
+            noThanksButton.addEventListener("click", () => {
+                container.innerHTML = ""; // Clear the container
+            });
+            container.appendChild(noThanksButton);
+        } else {
+            console.warn("Container not found in DOM.");
+        }
+    }
+
+    async function processTranscript(type) {
+        console.log(`Processing transcript with type: ${type}`);
+        try {
+            const response = await fetch(`/process_transcript`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ transcript, type }),
+            });
+
+            const data = await response.json();
+            if (data.processedText) {
+                console.log("Transcript processed successfully:", data.processedText);
+                const inputBox = document.getElementById("input-box");
+                if (inputBox) {
+                    inputBox.value = `${inputBox.value.trim()} ${data.processedText}`.trim();
+                } else {
+                    console.warn("Input box not found in DOM.");
+                }
+            } else {
+                console.error("Error processing transcript:", data.error);
+            }
+        } catch (error) {
+            console.error("Error sending transcript to server:", error);
+        }
+    }
 });
 
     </script>
