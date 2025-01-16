@@ -340,45 +340,69 @@ def summarize_text_endpoint():
 @app.route("/add_summary", methods=["POST"])
 def add_summary():
     """
-    This endpoint processes a user-selected option and a question context,
-    converts the input into the simplest possible first person logical sentence which turns the question, combined with the answer selected (based on a multiple-choice response from the user), and returns it in a single sentence.
-
-    Input:
-    {
-        "selected_option": "Water",
-        "question_context": "What is your favorite drink?"  # Optional
-    }
-
-    Example Behavior:
-      Input: {"selected_option": "Water", "question_context": "What is your favorite drink?"}
-      Output: "My favourite drink is water."
-
-    Returns:
-    - Success: {"message": "Sentence added successfully", "generated_sentence": "<sentence>"}
-    - Error: {"error": "No option provided"} (if 'selected_option' is missing)
+    Generate a contextual and logical sentence by combining a question and an answer.
     """
     try:
         # Parse incoming JSON data
         data = request.get_json()
-        selected_option = data.get("selected_option", "").strip()  # Get the user-selected option
-        question_context = data.get("question_context", "").strip()  # Optional: get the context of the question
+        selected_option = data.get("selected_option", "").strip()  # The user's choice
+        question_context = data.get("question_context", "").strip()  # The related question
 
-        if not selected_option:
-            return jsonify({"error": "No option provided"}), 400
+        # Ensure both fields are present
+        if not selected_option or not question_context:
+            return jsonify({"error": "Missing question or selected option"}), 400
 
-        # Generate a simple, logical sentence based on the selected option
-        if question_context:
-            sentence = f"My answer to '{question_context}' is '{selected_option}'."
-        else:
-            sentence = f"My choice is '{selected_option}'."
-            
-        # Log the resulting sentence for further processing or debugging
-        logger.info(f"Processed sentence from user input: {sentence}")
+        # Build the AI prompt
+        ai_prompt = f"""
+        You are a helpful assistant that takes a question and an answer to form a logical, clear, and contextual sentence. 
+        Ensure the sentence reads naturally and includes both the question and answer. 
+        Examples:
+        - Question: "What is your favorite drink?" 
+          Answer: "Water" 
+          Result: "My favorite drink is water."
+        
+        - Question: "What emotions do comfort foods evoke for you?" 
+          Answer: "Comfort" 
+          Result: "Comfort foods evoke the emotion of comfort for me."
+        
+        - Question: "What activity do you enjoy the most on weekends?" 
+          Answer: "Hiking" 
+          Result: "On weekends, I enjoy hiking the most."
 
-        # Return a success message with the generated sentence
-        return jsonify({"message": "Sentence added successfully", "generated_sentence": sentence})
+        - Question: "Which skill would you like to improve?" 
+          Answer: "Public speaking" 
+          Result: "I would like to improve my public speaking skills."
+
+        - Question: "What is the main source of your motivation?" 
+          Answer: "Family" 
+          Result: "The main source of my motivation is my family."
+
+
+        Now, create a sentence based on the following:
+        Question: "{question_context}"
+        Answer: "{selected_option}"
+        """
+
+        # Call OpenAI to generate the sentence
+        messages = [
+            {"role": "system", "content": "You create logical and natural sentences based on questions and answers."},
+            {"role": "user", "content": ai_prompt}
+        ]
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            temperature=0.5,
+            max_tokens=50
+        )
+
+        # Extract the generated sentence
+        generated_sentence = response.choices[0].message["content"].strip()
+
+        # Log and return the result
+        logger.info(f"Generated sentence: {generated_sentence}")
+        return jsonify({"message": "Sentence added successfully", "generated_sentence": generated_sentence})
+
     except Exception as e:
-        # Log any errors that occur during processing
         logger.error(f"Error in /add_summary: {e}", exc_info=True)
         return jsonify({"error": "Failed to add sentence"}), 500
 

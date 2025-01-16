@@ -534,6 +534,8 @@ document.addEventListener("DOMContentLoaded", () => {
             throw new Error("Invalid response format from /generate_think_smaller");
         }
 
+        const questionContext = data.question; // Capture the question context
+
         // Clear any previous question containers
         document.querySelectorAll(".multiple-choice-container").forEach((container) => container.remove());
 
@@ -575,14 +577,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 addToPageButton.addEventListener("click", async () => {
                     try {
                         // Send selected option to AI for sentence generation
-                        const response = await fetch("/summarize_text", {
+                        const response = await fetch("/add_summary", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ text: `My favorite choice is ${option}` }),
+                            body: JSON.stringify({
+                                selected_option: option,
+                                question_context: questionContext, // Use the captured variable
+                            }),
                         });
 
                         const data = await response.json();
-                        const summary = data.summary || `My favorite choice is ${option}.`;
+                        const summary = data.generated_sentence || `My favorite choice is ${option}.`;
 
                         // Add the generated sentence to the chat box
                         inputBox.value = `${inputBox.value.trim()} ${summary}`.trim();
