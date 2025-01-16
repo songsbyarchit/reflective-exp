@@ -487,14 +487,14 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-document.addEventListener("DOMContentLoaded", () => {
-    const thinkSmallerButton = document.getElementById("think-smaller");
-    if (!thinkSmallerButton) {
-        console.error("'Think Smaller' button not found in DOM.");
-        return;
-    }
+    document.addEventListener("DOMContentLoaded", () => {
+        const thinkSmallerButton = document.getElementById("think-smaller");
+        if (!thinkSmallerButton) {
+            console.error("'Think Smaller' button not found in DOM.");
+            return;
+        }
 
-    thinkSmallerButton.addEventListener("click", async () => {
+        thinkSmallerButton.addEventListener("click", async () => {
     try {
         const userInput = inputBox.value.trim(); // Get the user's input
         lastUserInput = userInput; // Update lastUserInput
@@ -554,11 +554,56 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Handle option click
             optionButton.addEventListener("click", async () => {
-                conversationSummary += ` | ${option}`;
-                lastUserInput = option;
+                // Clear previous buttons
+                questionContainer.innerHTML = "";
 
-                // Remove question container
-                questionContainer.remove();
+                // Create "No Thanks" and "Add to Page" buttons
+                const noThanksButton = document.createElement("button");
+                noThanksButton.className = "no-thanks-button";
+                noThanksButton.textContent = "No Thanks";
+
+                const addToPageButton = document.createElement("button");
+                addToPageButton.className = "add-to-writing-button";
+                addToPageButton.textContent = "Add to Page";
+
+                // Handle "No Thanks" click
+                noThanksButton.addEventListener("click", () => {
+                    questionContainer.remove(); // Remove the entire question container
+                });
+
+                // Handle "Add to Page" click
+                addToPageButton.addEventListener("click", async () => {
+                    try {
+                        // Send selected option to AI for sentence generation
+                        const response = await fetch("/summarize_text", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ text: `My favorite choice is ${option}` }),
+                        });
+
+                        const data = await response.json();
+                        const summary = data.summary || `My favorite choice is ${option}.`;
+
+                        // Add the generated sentence to the chat box
+                        inputBox.value = `${inputBox.value.trim()} ${summary}`.trim();
+
+                        // Send the generated sentence to the backend
+                        await fetch("/add_summary", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ sentence: summary }),
+                        });
+
+                        // Remove the question container
+                        questionContainer.remove();
+                    } catch (error) {
+                        console.error("Error adding to page:", error);
+                    }
+                });
+
+                // Append buttons
+                questionContainer.appendChild(noThanksButton);
+                questionContainer.appendChild(addToPageButton);
             });
 
             questionContainer.appendChild(optionButton);

@@ -336,6 +336,52 @@ def summarize_text_endpoint():
         logger.error(f"Error in /summarize_text: {e}")
         return jsonify({"summary": ""}), 500
 
+
+@app.route("/add_summary", methods=["POST"])
+def add_summary():
+    """
+    This endpoint processes a user-selected option and a question context,
+    converts the input into the simplest possible first person logical sentence which turns the question, combined with the answer selected (based on a multiple-choice response from the user), and returns it in a single sentence.
+
+    Input:
+    {
+        "selected_option": "Water",
+        "question_context": "What is your favorite drink?"  # Optional
+    }
+
+    Example Behavior:
+      Input: {"selected_option": "Water", "question_context": "What is your favorite drink?"}
+      Output: "My favourite drink is water."
+
+    Returns:
+    - Success: {"message": "Sentence added successfully", "generated_sentence": "<sentence>"}
+    - Error: {"error": "No option provided"} (if 'selected_option' is missing)
+    """
+    try:
+        # Parse incoming JSON data
+        data = request.get_json()
+        selected_option = data.get("selected_option", "").strip()  # Get the user-selected option
+        question_context = data.get("question_context", "").strip()  # Optional: get the context of the question
+
+        if not selected_option:
+            return jsonify({"error": "No option provided"}), 400
+
+        # Generate a simple, logical sentence based on the selected option
+        if question_context:
+            sentence = f"My answer to '{question_context}' is '{selected_option}'."
+        else:
+            sentence = f"My choice is '{selected_option}'."
+            
+        # Log the resulting sentence for further processing or debugging
+        logger.info(f"Processed sentence from user input: {sentence}")
+
+        # Return a success message with the generated sentence
+        return jsonify({"message": "Sentence added successfully", "generated_sentence": sentence})
+    except Exception as e:
+        # Log any errors that occur during processing
+        logger.error(f"Error in /add_summary: {e}", exc_info=True)
+        return jsonify({"error": "Failed to add sentence"}), 500
+
 # ----------------------------------------------------------------
 # Function which simply tells the user how to think bigger with a powerful hypothetical question
 # ----------------------------------------------------------------
