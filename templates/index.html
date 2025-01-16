@@ -322,6 +322,56 @@
             color: #fff; /* Light font color */
             transition: background-color 0.3s ease, color 0.3s ease;
         }
+
+        @media screen and (max-width: 768px) {
+            body {
+                font-size: 16px; /* Smaller base font size */
+            }
+
+            .small-button, #help-me-reflect {
+                width: 80%; /* Buttons take most of the screen width */
+                padding: 10px 20px; /* Smaller padding for buttons */
+                font-size: 14px; /* Smaller font size for buttons */
+                left: 10%; /* Center align for mobile */
+                right: auto;
+                position: static; /* Stack buttons vertically */
+                margin: 10px auto; /* Add spacing between buttons */
+            }
+
+            .bottom-buttons {
+                flex-direction: column; /* Stack bottom buttons vertically */
+                gap: 10px; /* Add spacing between buttons */
+            }
+
+            .bottom-buttons button {
+                width: 80%; /* Buttons take most of the screen width */
+                margin: 0 auto; /* Center align */
+            }
+
+            #input-box {
+                width: 90%; /* Input box takes most of the screen width */
+                font-size: 18px; /* Reduce font size for mobile */
+            }
+
+            .chat-container {
+                padding-top: 10px; /* Adjust padding for mobile */
+            }
+
+            .multiple-choice-container {
+                width: 90%; /* Take most of the screen width */
+            }
+
+            .multiple-choice-option {
+                font-size: 14px; /* Smaller font size for options */
+                padding: 8px 15px; /* Adjust padding */
+            }
+
+            .think-out-loud-container {
+                width: 90%; /* Adjust container width */
+                left: 5%; /* Center align on screen */
+                gap: 10px; /* Reduce spacing between buttons */
+            }
+        }
     </style>
 </head>
 <body>  
