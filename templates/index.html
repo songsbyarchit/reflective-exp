@@ -331,6 +331,7 @@
     <textarea id="input-box" placeholder="hey, what brings you here? :)" onkeypress="handleKeyPress(event)"></textarea>
     </div>   
     <script>
+        const { jsPDF } = window.jspdf;
         let conversationSummary = ""; // Initialize as an empty string
         const chatBox = document.getElementById("chat-box");
         const typingIndicator = document.getElementById("typing-indicator");
