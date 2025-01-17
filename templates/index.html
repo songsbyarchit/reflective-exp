@@ -151,12 +151,12 @@
         }
 
         #think-bigger {
-            top: calc(65%); /* Adjust position for the second button */
+            top: calc(60%); /* Adjust position for the second button */
         }
 
         #think-louder {
             left: 10%; /* Same horizontal position as the question */
-            top: calc(65%); /* Adjust position for the third button */
+            top: calc(60%); /* Adjust position for the third button */
         }
 
         .small-button:hover {
@@ -182,7 +182,7 @@
         .hypothetical-question {
             position: absolute;
             right: 10%; /* Align with the button */
-            top: calc(65% + 80px); /* Position below the Think Bigger button */
+            top: calc(60% + 80px); /* Position below the Think Bigger button */
             width: 250px; /* Match button width */
             font-family: 'Inter', sans-serif;
             font-size: 16px;
@@ -195,7 +195,7 @@
 
         .multiple-choice-container {
             position: absolute; /* Enable positioning relative to the parent */
-            right: 8%; /* Align container to the right */
+            right: 7%; /* Align container to the right */
             top: calc(15% + 60px); /* Adjust height above the "Think Smaller" button */
             width: 300px; /* Adjust width to accommodate content */
             background-color: #f9f9f9;
@@ -281,7 +281,7 @@
             flex-direction: column; /* Stack items vertically */
             align-items: center; /* Center items horizontally */
             gap: 15px; /* Add spacing between buttons */
-            top: calc(65% + 70px);
+            top: calc(60% + 70px);
         }
 
         .think-out-loud-container button {
@@ -375,6 +375,36 @@
             width: 95%;
             align-items: center;
         }
+    }
+
+    .jump-button {
+        position: fixed;
+        right: 20px;
+        padding: 10px;
+        font-size: 24px;
+        font-family: 'Inter', sans-serif;
+        font-weight: bold;
+        background-color: white;
+        color: black;
+        border: 2px solid black;
+        border-radius: 50px;
+        cursor: pointer;
+        transition: background-color 0.3s ease, color 0.3s ease;
+        z-index: 1000;
+        display: none; /* Hidden by default */
+    }
+
+    .jump-button:hover {
+        background-color: #333;
+        color: white;
+    }
+
+    .jump-to-top {
+        bottom: 80px; /* Position above "Jump to Bottom" */
+    }
+
+    .jump-to-bottom {
+        bottom: 20px;
     }
 
     </style>
@@ -682,13 +712,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 questionContainer.innerHTML = "";
 
                 // Create "No Thanks" and "Add to Page" buttons
-                const noThanksButton = document.createElement("button");
-                noThanksButton.className = "no-thanks-button";
-                noThanksButton.textContent = "no thanks 🥲";
 
                 const addToPageButton = document.createElement("button");
                 addToPageButton.className = "add-to-writing-button";
                 addToPageButton.textContent = "add to page ➕";
+
+                const noThanksButton = document.createElement("button");
+                noThanksButton.className = "no-thanks-button";
+                noThanksButton.textContent = "no thanks 🥲";
 
                 // Handle "No Thanks" click
                 noThanksButton.addEventListener("click", () => {
@@ -792,7 +823,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Add Stop Recording button
             const stopButton = document.createElement("button");
-            stopButton.textContent = "Stop Recording";
+            stopButton.textContent = "stop recording 🛑";
             stopButton.id = "stop-recording";
             stopButton.style.display = "none"; // Initially hidden
             stopButton.addEventListener("click", () => {
@@ -992,6 +1023,97 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("DOMContentLoaded: Adding event listeners and initializing jump buttons.");
+
+    const chatContainer = document.querySelector(".chat-container");
+    const jumpToTopButton = document.getElementById("jump-to-top");
+    const jumpToBottomButton = document.getElementById("jump-to-bottom");
+
+    if (!chatContainer) {
+        console.error("Error: chatContainer not found in the DOM.");
+        return;
+    }
+
+    if (!jumpToTopButton) {
+        console.error("Error: jumpToTopButton not found in the DOM.");
+        return;
+    }
+
+    if (!jumpToBottomButton) {
+        console.error("Error: jumpToBottomButton not found in the DOM.");
+        return;
+    }
+
+    function updateJumpButtons() {
+        const scrollHeight = chatContainer.scrollHeight - chatContainer.clientHeight;
+        const scrollTop = chatContainer.scrollTop;
+
+        console.log(`updateJumpButtons: scrollHeight=${scrollHeight}, scrollTop=${scrollTop}`);
+
+        if (scrollHeight <= 0) {
+            console.log("Scroll not possible. Hiding both buttons.");
+            jumpToTopButton.style.display = "none";
+            jumpToBottomButton.style.display = "none";
+        } else {
+            if (scrollTop > 100) {
+                console.log("ScrollTop > 100. Showing jumpToTopButton.");
+                jumpToTopButton.style.display = "block";
+            } else {
+                console.log("ScrollTop <= 100. Hiding jumpToTopButton.");
+                jumpToTopButton.style.display = "none";
+            }
+
+            if (scrollTop < scrollHeight - 100) {
+                console.log("ScrollTop < scrollHeight - 100. Showing jumpToBottomButton.");
+                jumpToBottomButton.style.display = "block";
+            } else {
+                console.log("ScrollTop >= scrollHeight - 100. Hiding jumpToBottomButton.");
+                jumpToBottomButton.style.display = "none";
+            }
+        }
+    }
+
+    // Call this function immediately after DOMContentLoaded
+    console.log("Delaying updateJumpButtons to ensure rendering.");
+    setTimeout(() => {
+        updateJumpButtons();
+        console.log("updateJumpButtons called after delay.");
+    }, 100);
+
+    // Add MutationObserver to monitor changes to the chatContainer
+    const observer = new MutationObserver(() => {
+        console.log("Mutation detected in chatContainer. Recalculating jump buttons.");
+        updateJumpButtons();
+    });
+
+    observer.observe(chatContainer, { childList: true, subtree: true });
+    console.log("MutationObserver attached to chatContainer.");
+
+
+    // Add scroll event listener to chatContainer
+    chatContainer.addEventListener("scroll", () => {
+        console.log("Scroll event triggered on chatContainer.");
+        updateJumpButtons();
+    });
+
+    // Scroll to top
+    jumpToTopButton.addEventListener("click", () => {
+        console.log("jumpToTopButton clicked. Scrolling to top.");
+        chatContainer.scrollTo({ top: 0, behavior: "smooth" });
+        jumpToTopButton.style.display = "none"; // Hide the button after clicking
+        jumpToBottomButton.style.display = "block"; // Show the bottom button
+    });
+
+    // Scroll to bottom
+    jumpToBottomButton.addEventListener("click", () => {
+        console.log("jumpToBottomButton clicked. Scrolling to bottom.");
+        chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: "smooth" });
+        jumpToBottomButton.style.display = "none"; // Hide the button after clicking
+        jumpToTopButton.style.display = "block"; // Show the top button
+    });
+});
+
     </script>
 <div id="latest-ai-response"></div>
 <button id="help-me-reflect">help me reflect 🧠</button>
@@ -1006,5 +1128,7 @@ document.addEventListener("DOMContentLoaded", () => {
     <button id="download-pdf">download as PDF 💾</button>
     <button id="scrap">scrap 🗑️ </button>
 </div>
+<button id="jump-to-top" class="jump-button jump-to-top">⬆️</button>
+<button id="jump-to-bottom" class="jump-button jump-to-bottom">⬇️</button>
 </body>
 </html>

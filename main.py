@@ -222,6 +222,8 @@ def stage_chat(stage_id, conversation_summary, user_input):
             f"- Stage: Identify and Challenge Limiting Beliefs (Stage 4)\n"
             f"'When you think about times you’ve succeeded, how does that change your perspective on failure?'\n\n"
             f"Now, ask a stage-specific question based on the user's input: {user_input}"
+            f"Your text must be ENTIRELY in lowercase without any uppercase characters, under any circumstance."
+
         )
     }
 
@@ -274,9 +276,11 @@ def generate_think_smaller():
                 "Option 1\n"
                 "Option 2\n"
                 "Option 3\n"
-                "Something else\n\n"
+                "something else 🤔\n\n"
                 "Ensure the question is tailored to the user's input, and each option is concise (maximum 15 characters), realistic, and engaging. "
-                "The fourth option must always be 'Something Else.' Do not include any numbering, letters, or additional punctuation."
+                "The fourth option must always be 'something else 🤔' Do not include any numbering, letters, or additional punctuation."
+                "The question MUST be lowercase, and the options much EACH be fully lowercase with one associated emoji after the option after exactly ONE space key."
+
             )
         }
 
@@ -287,7 +291,7 @@ def generate_think_smaller():
                 "content": (
                     f"Here is the conversation summary so far:\n{conversation_summary}\n\n"
                     f"The user's latest input was:\n{last_user_input}\n\n"
-                    "Using these details, generate a single multiple-choice question with four answer options."
+                    "Using these details, generate a single multiple-choice question, in full lowercase, with four answer options, also in lowercase."
                 )
             }
         ]
@@ -358,14 +362,23 @@ def add_summary():
         ai_prompt = f"""
         You are a helpful assistant that takes a question and an answer to form a logical, clear, and contextual sentence. 
         Ensure the sentence reads naturally and includes both the question and answer. The sentence MUST be in first person.
+        IF the answer is 'something else 🤔', then replace that with a ___. i.e.
         Examples:
         - Question: "What is your favorite drink?" 
           Answer: "Water" 
           Result: "My favorite drink is water."
+
+        - Question: "What is your favorite sport?" 
+          Answer: "something else 🤔" 
+          Result: "My favorite sport is ____."
         
         - Question: "What emotions do comfort foods evoke for you?" 
           Answer: "Comfort" 
           Result: "Comfort foods evoke the emotion of comfort for me."
+
+        - Question: "What would you do with a million dollars?" 
+          Answer: "something else 🤔" 
+          Result: "I'd do ____ with a million dollars."
         
         - Question: "What activity do you enjoy the most on weekends?" 
           Answer: "Hiking" 
@@ -443,6 +456,7 @@ def generate_think_bigger():
                 "The scenario should be phrased as one short sentence to set context, followed by a short question. It could also just be one question in which the question is contained."
                 "End the scenario with a highly specific and open-ended reflective question that encourages them to think deeply and explore actionable ideas. "
                 "Avoid abstract, overly metaphorical, or flowery language. Keep the scenario relevant and focused on their context. It MUST strictly be 20 words and NO MORE IS ALLOWED."
+                "Your text must be ENTIRELY in lowercase without any uppercase characters, under any circumstance."
             )
         }
 
@@ -453,7 +467,7 @@ def generate_think_bigger():
                 "content": (
                     f"The conversation summary so far is:\n{conversation_summary}\n\n"
                     f"The user's last input was:\n{last_user_input}\n\n"
-                    f"Using these details, craft a hypothetical question that feels tailored to them."
+                    f"Using these details, craft a hypothetical question that feels tailored to them, written in entirely lowercase"
                 )
             }
         ]
@@ -671,6 +685,7 @@ def get_response():
                     "No long sentences, DO NOT write lists or have lots of commas or clauses. Split into two sentences if necessary to keep it crisper and more readable. "
                     "Make it something a human would say to encourage someone to start writing. Not cringey, matter of fact and phrased in a simple way which makes someone easily start writing. "
                     "Be empathetic, but avoid being overly flowery or verbose."
+                    "Your text must be ENTIRELY in lowercase without any uppercase characters, under any circumstance."
                 )
             }
             try:
