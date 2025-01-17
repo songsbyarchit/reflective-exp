@@ -28,9 +28,9 @@
             flex-direction: column; /* Stack items vertically */
             align-items: center; /* Center horizontally */
             justify-content: flex-start; /* center content vertically */
-            overflow-y: hidden; /* Allow vertical scrolling */
+            overflow-y: auto; /* Enable vertical scrolling */
             overflow-x: hidden; /* Prevent horizontal scrolling */
-            padding-top: calc(50vh - 50px); /* Adjust padding for vertical centering */
+            padding-top: 20px; /* Adjust to a fixed padding value */
             transition: padding-top 0.3s ease-in-out; /* Smooth slide transition */
         }
 
@@ -80,6 +80,9 @@
 
         #input-box {
             animation: fadePlaceholder 4s infinite; /* Add fade animation */
+            max-height: calc(100vh - 200px); /* Limit height to leave 200px at the bottom */
+            height: auto; /* Let height adjust dynamically */
+            overflow-y: auto; /* Enable scrolling for overflowing text */
             display: none;
             margin-top: 20px; /* Adds spacing below the last message */
             margin-left: auto;
@@ -93,10 +96,11 @@
             background-color: transparent;
             line-height: 1.5;
             resize: none;
-            overflow-y: auto;
             text-align: center;
             white-space: pre-wrap;
-            position: relative; /* Removes fixed or absolute positioning */
+            position: absolute;
+            top: 50%; /* Adjust to move higher or lower */
+            transform: translateY(-50%);
         }
 
         #input-box::placeholder {
@@ -236,21 +240,25 @@
 
         .no-thanks-button,
         .add-to-writing-button {
-            margin: 5px;
+            display: inline-block;
+            margin: 0; /* Remove vertical margin for inline alignment */
             padding: 10px 20px;
-            font-size: 14px;
-            background-color: #e0e0e0;
+            font-family: 'Inter', sans-serif;
+            font-size: 12px;
+            text-align: center;
+            border: 2px solid black;
+            background-color: white;
             color: black;
-            border: 1px solid #ccc;
             border-radius: 50px;
             cursor: pointer;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         .no-thanks-button:hover,
         .add-to-writing-button:hover {
-            background-color: #333; /* Dark background */
-            color: #fff; /* Light font color */
-            transition: background-color 0.3s ease, color 0.3s ease; /* Smooth fade transition */
+            background-color: #333;
+            color: #fff;
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         @keyframes fadePlaceholder {
@@ -267,7 +275,7 @@
             left: 13%; /* Adjust the position to align with the layout */
             background-color: #f9f9f9; /* Light background */
             border-radius: 50px; /* Optional: Rounded corners */
-            padding: 20px; /* Add spacing around buttons */
+            padding: 10px; /* Add spacing around buttons */
             z-index: 1000; /* Ensure it's above other elements */
             display: flex; /* Use flexbox for alignment */
             flex-direction: column; /* Stack items vertically */
@@ -277,7 +285,9 @@
         }
 
         .think-out-loud-container button {
+            width: 150px;
             font-family: 'Inter', sans-serif;
+            left: 13%; /* Adjust the position to align with the layout */
             font-size: 12px;
             font-weight: bold;
             color: #333;
@@ -344,7 +354,7 @@
         }
 
         .small-button {
-            font-size: 10px; /* Much smaller font size for mobile */
+            font-size: 12px; /* Much smaller font size for mobile */
             padding: 6px 6px; /* Reduce padding around the text */
             margin: 1px auto; /* Center align and reduce spacing */
         }
@@ -674,11 +684,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 // Create "No Thanks" and "Add to Page" buttons
                 const noThanksButton = document.createElement("button");
                 noThanksButton.className = "no-thanks-button";
-                noThanksButton.textContent = "No Thanks";
+                noThanksButton.textContent = "no thanks 🥲";
 
                 const addToPageButton = document.createElement("button");
                 addToPageButton.className = "add-to-writing-button";
-                addToPageButton.textContent = "Add to Page";
+                addToPageButton.textContent = "add to page ➕";
 
                 // Handle "No Thanks" click
                 noThanksButton.addEventListener("click", () => {
@@ -868,7 +878,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Add "Record Again" button
             const recordAgainButton = document.createElement("button");
-            recordAgainButton.textContent = "Record Again";
+            recordAgainButton.textContent = "record again 🔁";
             recordAgainButton.addEventListener("click", () => {
                 container.innerHTML = ""; // Reset container
                 thinkLouderButton.click(); // Reinitialize the process
@@ -877,19 +887,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Add "Add Cleaned Transcript" button
             const addCleanedTranscriptButton = document.createElement("button");
-            addCleanedTranscriptButton.textContent = "Add Cleaned Transcript";
+            addCleanedTranscriptButton.textContent = "add cleaned transcript 🫧";
             addCleanedTranscriptButton.addEventListener("click", () => processTranscript("cleaned"));
             container.appendChild(addCleanedTranscriptButton);
 
             // Add "Add Summary" button
             const addSummaryButton = document.createElement("button");
-            addSummaryButton.textContent = "Add Summary";
+            addSummaryButton.textContent = "add summary 📝";
             addSummaryButton.addEventListener("click", () => processTranscript("summary"));
             container.appendChild(addSummaryButton);
 
             // Add "No Thanks" button
             const noThanksButton = document.createElement("button");
-            noThanksButton.textContent = "No Thanks";
+            noThanksButton.textContent = "no thanks 🥲";
             noThanksButton.addEventListener("click", () => {
                 container.innerHTML = ""; // Clear the container
             });

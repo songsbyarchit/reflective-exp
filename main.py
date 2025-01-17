@@ -357,7 +357,7 @@ def add_summary():
         # Build the AI prompt
         ai_prompt = f"""
         You are a helpful assistant that takes a question and an answer to form a logical, clear, and contextual sentence. 
-        Ensure the sentence reads naturally and includes both the question and answer. 
+        Ensure the sentence reads naturally and includes both the question and answer. The sentence MUST be in first person.
         Examples:
         - Question: "What is your favorite drink?" 
           Answer: "Water" 
@@ -437,10 +437,12 @@ def generate_think_bigger():
         system_message = {
             "role": "system",
             "content": (
-                "You are a skilled reflection coach. Based on the user's input, craft a vivid and realistic scenario that directly relates to their concern or situation. "
-                "The scenario should immerse them in a specific, relatable situation that resonates with their input, helping them see possibilities or alternatives. "
+                "You are a skilled reflection coach. Based on the user's input, craft a realistic scenario that directly relates to their concern or situation. "
+                "The scenario should immerse them in a specific, relatable situation that resonates with their input, helping them CONSIDER possibilities or alternatives. "
+                #"The scenario should not be biased/leading/point them in a specific direction, but should rather blow up their mind with more options than they thought were possible before. "
+                "The scenario should be phrased as one short sentence to set context, followed by a short question. It could also just be one question in which the question is contained."
                 "End the scenario with a highly specific and open-ended reflective question that encourages them to think deeply and explore actionable ideas. "
-                "Avoid abstract, overly metaphorical, or flowery language. Keep the scenario relevant and focused on their context. It must strictly be 20 words maximum."
+                "Avoid abstract, overly metaphorical, or flowery language. Keep the scenario relevant and focused on their context. It MUST strictly be 20 words and NO MORE IS ALLOWED."
             )
         }
 
