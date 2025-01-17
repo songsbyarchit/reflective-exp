@@ -25,6 +25,7 @@
             width: 100vw; /* Full viewport width */
             height: 100%; /* Full height relative to body */
             display: flex;
+            scroll-behavior: smooth;
             flex-direction: column; /* Stack items vertically */
             align-items: center; /* Center horizontally */
             justify-content: flex-start; /* center content vertically */
@@ -459,7 +460,7 @@
             }
 
             chatBox.appendChild(messageDiv);
-            chatBox.scrollIntoView({ behavior: "smooth", block: "end" });
+            messageDiv.scrollIntoView({ behavior: "smooth", block: "end" });
             if (sender !== "user") chatBox.appendChild(inputBox); // Append input box only after AI response
         }
 
@@ -1023,98 +1024,8 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
-document.addEventListener("DOMContentLoaded", () => {
-    console.log("DOMContentLoaded: Adding event listeners and initializing jump buttons.");
+</script>
 
-    const chatContainer = document.querySelector(".chat-container");
-    const jumpToTopButton = document.getElementById("jump-to-top");
-    const jumpToBottomButton = document.getElementById("jump-to-bottom");
-
-    if (!chatContainer) {
-        console.error("Error: chatContainer not found in the DOM.");
-        return;
-    }
-
-    if (!jumpToTopButton) {
-        console.error("Error: jumpToTopButton not found in the DOM.");
-        return;
-    }
-
-    if (!jumpToBottomButton) {
-        console.error("Error: jumpToBottomButton not found in the DOM.");
-        return;
-    }
-
-    function updateJumpButtons() {
-        const scrollHeight = chatContainer.scrollHeight - chatContainer.clientHeight;
-        const scrollTop = chatContainer.scrollTop;
-
-        console.log(`updateJumpButtons: scrollHeight=${scrollHeight}, scrollTop=${scrollTop}`);
-
-        if (scrollHeight <= 0) {
-            console.log("Scroll not possible. Hiding both buttons.");
-            jumpToTopButton.style.display = "none";
-            jumpToBottomButton.style.display = "none";
-        } else {
-            if (scrollTop > 100) {
-                console.log("ScrollTop > 100. Showing jumpToTopButton.");
-                jumpToTopButton.style.display = "block";
-            } else {
-                console.log("ScrollTop <= 100. Hiding jumpToTopButton.");
-                jumpToTopButton.style.display = "none";
-            }
-
-            if (scrollTop < scrollHeight - 100) {
-                console.log("ScrollTop < scrollHeight - 100. Showing jumpToBottomButton.");
-                jumpToBottomButton.style.display = "block";
-            } else {
-                console.log("ScrollTop >= scrollHeight - 100. Hiding jumpToBottomButton.");
-                jumpToBottomButton.style.display = "none";
-            }
-        }
-    }
-
-    // Call this function immediately after DOMContentLoaded
-    console.log("Delaying updateJumpButtons to ensure rendering.");
-    setTimeout(() => {
-        updateJumpButtons();
-        console.log("updateJumpButtons called after delay.");
-    }, 100);
-
-    // Add MutationObserver to monitor changes to the chatContainer
-    const observer = new MutationObserver(() => {
-        console.log("Mutation detected in chatContainer. Recalculating jump buttons.");
-        updateJumpButtons();
-    });
-
-    observer.observe(chatContainer, { childList: true, subtree: true });
-    console.log("MutationObserver attached to chatContainer.");
-
-
-    // Add scroll event listener to chatContainer
-    chatContainer.addEventListener("scroll", () => {
-        console.log("Scroll event triggered on chatContainer.");
-        updateJumpButtons();
-    });
-
-    // Scroll to top
-    jumpToTopButton.addEventListener("click", () => {
-        console.log("jumpToTopButton clicked. Scrolling to top.");
-        chatContainer.scrollTo({ top: 0, behavior: "smooth" });
-        jumpToTopButton.style.display = "none"; // Hide the button after clicking
-        jumpToBottomButton.style.display = "block"; // Show the bottom button
-    });
-
-    // Scroll to bottom
-    jumpToBottomButton.addEventListener("click", () => {
-        console.log("jumpToBottomButton clicked. Scrolling to bottom.");
-        chatContainer.scrollTo({ top: chatContainer.scrollHeight, behavior: "smooth" });
-        jumpToBottomButton.style.display = "none"; // Hide the button after clicking
-        jumpToTopButton.style.display = "block"; // Show the top button
-    });
-});
-
-    </script>
 <div id="latest-ai-response"></div>
 <button id="help-me-reflect">help me reflect 🧠</button>
 <div id="think-smaller-question" class="smaller-question"></div>
@@ -1128,7 +1039,5 @@ document.addEventListener("DOMContentLoaded", () => {
     <button id="download-pdf">download as PDF 💾</button>
     <button id="scrap">scrap 🗑️ </button>
 </div>
-<button id="jump-to-top" class="jump-button jump-to-top">⬆️</button>
-<button id="jump-to-bottom" class="jump-button jump-to-bottom">⬇️</button>
 </body>
 </html>

@@ -362,35 +362,39 @@ def add_summary():
         ai_prompt = f"""
         You are a helpful assistant that takes a question and an answer to form a logical, clear, and contextual sentence. 
         Ensure the sentence reads naturally and includes both the question and answer. The sentence MUST be in first person.
+        The final sentence MUST remove emojis, even if the answer contained any. Keep only the text.
+        Your text must be ENTIRELY in lowercase without any uppercase characters, under any circumstance.
+
         IF the answer is 'something else 🤔', then replace that with a ___. i.e.
+
         Examples:
-        - Question: "What is your favorite drink?" 
-          Answer: "Water" 
-          Result: "My favorite drink is water."
+        - Question: "what is your favorite drink?" 
+          Answer: "water 💧" 
+          Result: "my favorite drink is water."
 
         - Question: "What is your favorite sport?" 
           Answer: "something else 🤔" 
-          Result: "My favorite sport is ____."
+          Result: "my favorite sport is ____."
         
         - Question: "What emotions do comfort foods evoke for you?" 
-          Answer: "Comfort" 
-          Result: "Comfort foods evoke the emotion of comfort for me."
+          Answer: "comfort 😌" 
+          Result: "comfort foods evoke the emotion of comfort for me."
 
-        - Question: "What would you do with a million dollars?" 
+        - Question: "what would you do with a million dollars?" 
           Answer: "something else 🤔" 
-          Result: "I'd do ____ with a million dollars."
+          Result: "i'd do ____ with a million dollars."
         
-        - Question: "What activity do you enjoy the most on weekends?" 
-          Answer: "Hiking" 
-          Result: "On weekends, I enjoy hiking the most."
+        - Question: "what activity do you enjoy the most on weekends?" 
+          Answer: "hiking 🚶" 
+          Result: "on weekends, i enjoy hiking the most."
 
-        - Question: "Which skill would you like to improve?" 
-          Answer: "Public speaking" 
-          Result: "I would like to improve my public speaking skills."
+        - Question: "which skill would you like to improve?" 
+          Answer: "public speaking 🎤" 
+          Result: "i would like to improve my public speaking skills."
 
-        - Question: "What is the main source of your motivation?" 
-          Answer: "Family" 
-          Result: "The main source of my motivation is my family."
+        - Question: "what is the main source of your motivation?" 
+          Answer: "family 👪" 
+          Result: "the main source of my motivation is my family."
 
 
         Now, create a sentence based on the following:
