@@ -643,6 +643,60 @@ def process_transcript():
         logger.error(f"Error processing transcript: {e}", exc_info=True)
         return jsonify({"error": "Failed to process transcript"}), 500
 
+@app.route("/generate_speak_question", methods=["POST"])
+def generate_speak_question():
+    """
+    Generates a question specifically designed to be easier to speak about than write about.
+    Uses the user's most recent input and overall conversation summary.
+    """
+    try:
+        # Parse incoming JSON data
+        data = request.get_json()
+        user_input = data.get("message", "").strip()
+        conversation_summary = data.get("conversationSummary", "")
+
+        if not user_input or not conversation_summary:
+            return jsonify({"error": "Missing user input or conversation summary"}), 400
+
+        # Build OpenAI prompt for generating the question
+        system_message = {
+            "role": "system",
+            "content": (
+                "You are an assistant specializing in generating reflective questions that encourage speaking rather than writing. "
+                "Your goal is to make the user want to verbally express themselves with energy and spontaneity. "
+                "Include a direct command like 'speak,' 'rant,' 'yap,' or 'talk' in the question. "
+                "The question must sound like the user is talking to a friend, not a formal prompt. "
+                "Keep the question concise and limited to 20 words. "
+                "Avoid abstract or overly complex language and focus on sparking verbal exploration or ranting aloud."
+                "Your text must be ENTIRELY in lowercase without any uppercase characters, under any circumstance."
+            )
+        }
+
+        user_message = {
+            "role": "user",
+            "content": (
+                f"Based on the conversation summary so far:\n{conversation_summary}\n\n"
+                f"And the user's most recent input:\n{user_input}\n\n"
+                "Generate a question that feels natural to answer aloud and encourages speaking rather than writing."
+            )
+        }
+
+        # Call OpenAI API
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[system_message, user_message],
+            temperature=0.7,
+            max_tokens=100,
+        )
+
+        # Extract the generated question
+        generated_question = response.choices[0].message["content"].strip()
+        return jsonify({"question": generated_question})
+
+    except Exception as e:
+        logger.error(f"Error in /generate_speak_question: {e}", exc_info=True)
+        return jsonify({"error": "Failed to generate question"}), 500
+
 @app.route("/get_response", methods=["POST"])
 def get_response():
     global conversation_summary, current_stage, last_user_input  # Maintain state between requests

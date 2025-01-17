@@ -111,7 +111,7 @@
         #help-me-reflect {
             position: fixed;
             left: 10%; /* Same horizontal position as the question */
-            top: 15%; /* Adjusted to ensure it is slightly below the question */
+            top: 10%; /* Adjusted to ensure it is slightly below the question */
             width: 250px;
             padding: 15px 35px;
             font-size: 16px;
@@ -148,16 +148,16 @@
         }
 
         #think-smaller {
-            top: calc(15%); /* Adjust position for the first button */
+            top: calc(10%); /* Adjust position for the first button */
         }
 
         #think-bigger {
-            top: calc(60%); /* Adjust position for the second button */
+            top: calc(50%); /* Adjust position for the second button */
         }
 
         #think-louder {
             left: 10%; /* Same horizontal position as the question */
-            top: calc(60%); /* Adjust position for the third button */
+            top: calc(50%); /* Adjust position for the third button */
         }
 
         .small-button:hover {
@@ -170,7 +170,7 @@
             position: absolute; /* Use absolute positioning relative to the container */
             left: 10%; /* Align horizontally with the button */
             width: 250px; /* Match the button width */
-            top: calc(15% + 80px); /* Position 10px below the "Help Me Reflect" button */
+            top: calc(10% + 80px); /* Position 10px below the "Help Me Reflect" button */
             font-family: 'Inter', sans-serif;
             font-style: italic;
             font-size: 16px;
@@ -183,7 +183,7 @@
         .hypothetical-question {
             position: absolute;
             right: 10%; /* Align with the button */
-            top: calc(60% + 80px); /* Position below the Think Bigger button */
+            top: calc(50% + 80px); /* Position below the Think Bigger button */
             width: 250px; /* Match button width */
             font-family: 'Inter', sans-serif;
             font-size: 16px;
@@ -197,7 +197,7 @@
         .multiple-choice-container {
             position: absolute; /* Enable positioning relative to the parent */
             right: 7%; /* Align container to the right */
-            top: calc(15% + 60px); /* Adjust height above the "Think Smaller" button */
+            top: calc(10% + 60px); /* Adjust height above the "Think Smaller" button */
             width: 300px; /* Adjust width to accommodate content */
             background-color: #f9f9f9;
             font-family: 'Inter', sans-serif;
@@ -282,7 +282,7 @@
             flex-direction: column; /* Stack items vertically */
             align-items: center; /* Center items horizontally */
             gap: 15px; /* Add spacing between buttons */
-            top: calc(60% + 70px);
+            top: calc(50% + 180px);
         }
 
         .think-out-loud-container button {
@@ -378,36 +378,19 @@
         }
     }
 
-    .jump-button {
-        position: fixed;
-        right: 20px;
-        padding: 10px;
-        font-size: 24px;
-        font-family: 'Inter', sans-serif;
-        font-weight: bold;
-        background-color: white;
-        color: black;
-        border: 2px solid black;
-        border-radius: 50px;
-        cursor: pointer;
-        transition: background-color 0.3s ease, color 0.3s ease;
-        z-index: 1000;
-        display: none; /* Hidden by default */
-    }
-
-    .jump-button:hover {
-        background-color: #333;
-        color: white;
-    }
-
-    .jump-to-top {
-        bottom: 80px; /* Position above "Jump to Bottom" */
-    }
-
-    .jump-to-bottom {
-        bottom: 20px;
-    }
-
+    #speak-aloud-question {
+    position: absolute; /* Ensures it's positioned relative to the viewport */
+    left: 10%; /* Aligns horizontally with the Think Louder button */
+    top: calc(50% + 80px); /* Places it below the Think Louder button */
+    width: 250px; /* Matches the width of the Think Louder button */
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    font-weight: 500;
+    font-style: italic;
+    color: #8a8a8a;
+    line-height: 1.5;
+    text-align: center; /* Centers the text for readability */
+}
     </style>
 </head>
 <body>  
@@ -811,10 +794,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
             // Add buttons for duration selection
             const durations = [15, 30, 60];
-            durations.forEach((duration) => {
+            const emojis = ["⚡", "🙊", "🤐"]; // Different emojis for each button
+            durations.forEach((duration, index) => {
                 console.log(`Creating button for ${duration} seconds.`);
                 const button = document.createElement("button");
-                button.textContent = `${duration} seconds`;
+                button.textContent = `${duration} seconds ${emojis[index]}`; // Add corresponding emoji
                 button.addEventListener("click", () => {
                     console.log(`Start recording button clicked for ${duration} seconds.`);
                     startRecording(duration);
@@ -1024,6 +1008,50 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 });
 
+document.addEventListener("DOMContentLoaded", () => {
+    const speakAloudDiv = document.getElementById("speak-aloud-question");
+
+    if (speakAloudDiv) {
+        // Automatically fetch a speak-aloud question when the page loads or user input changes
+        async function fetchSpeakAloudQuestion() {
+            try {
+                const message = inputBox.value.trim() || ""; // Default to empty string if input is missing
+                const payload = {
+                    message, // Ensure a valid string
+                    conversationSummary: conversationSummary || "No conversation yet.", // Provide a default summary if empty
+                };
+
+                const response = await fetch("/generate_speak_question", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(payload),
+                });
+
+                if (!response.ok) {
+                    console.error(`Failed to fetch speak question: ${response.status}`);
+                    return;
+                }
+
+                const data = await response.json();
+                if (data.question) {
+                    speakAloudDiv.textContent = data.question; // Display the fetched question
+                } else {
+                    console.error("No question returned from server.");
+                }
+            } catch (error) {
+                console.error("Error in fetchSpeakAloudQuestion:", error);
+            }
+        }
+
+        const thinkLouderButton = document.getElementById("think-louder");
+        if (thinkLouderButton) {
+            thinkLouderButton.addEventListener("click", fetchSpeakAloudQuestion);
+        }
+    } else {
+        console.error("'speak-aloud-question' div not found in DOM.");
+    }
+});
+
 </script>
 
 <div id="latest-ai-response"></div>
@@ -1032,6 +1060,7 @@ document.addEventListener("DOMContentLoaded", () => {
 <button id="think-smaller" class="small-button">think smaller 🎯</button>
 <div id="think-bigger-question" class="hypothetical-question"></div>
 <button id="think-bigger" class="small-button">think bigger 💡</button>
+<div id="speak-aloud-question" class="hypothetical-question"></div>
 <button id="think-louder" class="small-button">think out loud 🎙️</button>
 <div class="bottom-buttons">
     <button id="read-aloud">read aloud 🗣️</button>
